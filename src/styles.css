@@ -1,16 +1,543 @@
+/* ===========================================================================
+   Qortium Chess — token-first stylesheet.
+
+   Layering contract (Classic is the BASE; Modern and Fun are ADDITIVE):
+
+     :root                                    Classic light (the default)
+     :root[data-theme='dark']                 Classic dark
+     :root[data-accent='...']                 9 accents, light + dark
+     :root[data-text-size='...']              6 steps of --qch-scale
+     :root[data-ui='modern']                  Modern light neutrals + Inter
+     :root[data-theme='dark'][data-ui='modern']
+     :root[data-ui='fun']                     Fun light + Comic Neue / Fredoka
+     :root[data-theme='dark'][data-ui='fun']
+
+   Modern and Fun override ONLY neutrals, font-family, layout and chrome.
+   They never touch the accent tokens — the accent stays user-selected.
+
+   Font families are referenced by name only; the @fontsource packages
+   (lexend / inter / comic-neue / fredoka) are imported from main.tsx.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Layer 1 — Classic light (default). Values from
+   SPEC-classic-support-for-modern-apps.md §4.
+   --------------------------------------------------------------------------- */
+
 :root {
-  color: #192125;
-  background: #eef2ef;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  /* Type scale */
+  --qch-scale: 1;
+  --qch-text: calc(16px * var(--qch-scale));
+  --qch-text-small: calc(13px * var(--qch-scale));
+  --qch-text-title: calc(28px * var(--qch-scale));
+  --qch-text-heading: calc(21px * var(--qch-scale));
+
+  /* Geometry */
+  --qch-radius: 8px;
+  --qch-radius-sm: 6px;
+  --qch-radius-pill: 999px;
+
+  /* Neutrals */
+  --qch-page: #f7f5ef;
+  --qch-rail: #ebe7de;
+  --qch-surface: #ffffff;
+  --qch-surface-alt: #f5f1e9;
+  --qch-control: #f0ece3;
+  --qch-control-hover: #e7e1d6;
+  --qch-border: #d7d0c4;
+  --qch-border-strong: #b8aea0;
+  --qch-text-primary: #18201f;
+  --qch-text-secondary: #44504e;
+  --qch-muted: #67716f;
+
+  /* Accent — Classic default is green */
+  --qch-accent: #21824a;
+  --qch-accent-hover: #196a3a;
+  --qch-accent-text: #ffffff;
+  --qch-accent-soft: rgb(33 130 74 / 10%);
+  --qch-accent-ring: rgb(33 130 74 / 18%);
+  --qch-gradient-primary: linear-gradient(180deg, #237843 0%, #21824a 58%, #1d7341 100%);
+
+  /* Semantic status */
+  --qch-error: #bd332e;
+  --qch-error-soft: #fff0ee;
+  --qch-warning: #8f641b;
+  --qch-warning-soft: #fff8e9;
+  --qch-idea: #7560c8;
+  --qch-idea-soft: rgb(117 96 200 / 12%);
+  --qch-issue: #d06a2a;
+  --qch-issue-soft: rgb(208 106 42 / 13%);
+
+  /* Chrome */
+  --qch-shadow: 0 1px 2px rgb(35 31 24 / 4%), 0 8px 24px rgb(35 31 24 / 6%);
+  --qch-shadow-hover: 0 2px 4px rgb(35 31 24 / 5%), 0 12px 28px rgb(35 31 24 / 9%);
+  --qch-modal-backdrop: rgb(24 27 27 / 38%);
+
+  /* Layout */
+  --qch-content-width: min(1120px, 100%);
+  --qch-content-pad: 24px;
+
+  /* Fonts */
+  --qch-font-body: "Lexend", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --qch-font-heading: var(--qch-font-body);
+  --qch-font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* -- Board tokens ------------------------------------------------------
+     board-1: the board is an immersive surface. Square colours are their OWN
+     tokens and are deliberately NOT derived from --qch-accent: a yellow or
+     orange accent would destroy square-to-square legibility and piece
+     contrast. Each UI family / theme supplies its own board palette. */
+  --qch-square-max: 64px;
+  --qch-square-light: #e9edd8;
+  --qch-square-dark: #7d945d;
+  --qch-square-light-hover: #dde2c4;
+  --qch-square-dark-hover: #6d834f;
+  --qch-piece: #14181a;
+  --qch-piece-halo: rgb(255 255 255 / 55%);
+  --qch-board-frame: #1c2a2f;
+  --qch-board-frame-width: 2px;
+  /* Indicator colours. Each indicator ALSO carries a distinct geometry
+     (solid ring / dot / dashed ring / inset band) so it never relies on
+     colour alone — see the .board-square rules below. */
+  --qch-square-selected: #d8a03d;
+  --qch-square-target: rgb(28 42 47 / 45%);
+  --qch-square-check: #bd332e;
+  --qch-square-last-move: rgb(216 160 61 / 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 2 — Classic dark.
+   --------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] {
+  --qch-page: #0e1111;
+  --qch-rail: #0b0e0e;
+  --qch-surface: #161d1d;
+  --qch-surface-alt: #1b2424;
+  --qch-control: #243030;
+  --qch-control-hover: #2c3939;
+  --qch-border: #364444;
+  --qch-border-strong: #5a6b6b;
+  --qch-text-primary: #f4f0e8;
+  --qch-text-secondary: #cbd5d5;
+  --qch-muted: #a9b6b6;
+
+  --qch-accent: #87d99b;
+  --qch-accent-hover: #6fcd87;
+  --qch-accent-text: #0e1411;
+  --qch-accent-soft: rgb(135 217 155 / 12%);
+  --qch-accent-ring: rgb(135 217 155 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #95e0a7 0%, #87d99b 58%, #79cf8e 100%);
+
+  --qch-error: #ef8b84;
+  --qch-error-soft: #2c1716;
+  --qch-warning: #e4c06d;
+  --qch-warning-soft: #2b2313;
+  --qch-idea: #caa2ff;
+  --qch-idea-soft: rgb(202 162 255 / 13%);
+  --qch-issue: #f1b16d;
+  --qch-issue-soft: rgb(241 177 109 / 14%);
+
+  --qch-shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 8px 20px rgb(0 0 0 / 25%);
+  --qch-shadow-hover: 0 2px 4px rgb(0 0 0 / 24%), 0 12px 26px rgb(0 0 0 / 32%);
+  --qch-modal-backdrop: rgb(0 0 0 / 45%);
+
+  /* board-2: dark Classic board — the same warm/green board family, dimmed so
+     it sits on a near-black page without glaring, while keeping a wide
+     light/dark square separation. */
+  --qch-square-light: #b9c39a;
+  --qch-square-dark: #55673d;
+  --qch-square-light-hover: #a9b48b;
+  --qch-square-dark-hover: #485833;
+  --qch-piece: #0d1210;
+  --qch-piece-halo: rgb(255 255 255 / 42%);
+  --qch-board-frame: #5a6b6b;
+  --qch-square-selected: #f0c169;
+  --qch-square-target: rgb(13 18 16 / 52%);
+  --qch-square-check: #ef8b84;
+  --qch-square-last-move: rgb(240 193 105 / 62%);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 3 — accents (9 x light, 9 x dark).
+   Accent blocks NEVER touch neutrals, layout, chrome or board squares.
+   --------------------------------------------------------------------------- */
+
+:root[data-accent='green'] {
+  --qch-accent: #21824a;
+  --qch-accent-hover: #196a3a;
+  --qch-accent-text: #ffffff;
+  --qch-accent-soft: rgb(33 130 74 / 10%);
+  --qch-accent-ring: rgb(33 130 74 / 18%);
+  --qch-gradient-primary: linear-gradient(180deg, #237843 0%, #21824a 58%, #1d7341 100%);
+}
+
+:root[data-accent='blue'] {
+  --qch-accent: #2a79f3;
+  --qch-accent-hover: #1e5ec3;
+  --qch-accent-soft: rgb(42 121 243 / 10%);
+  --qch-accent-ring: rgb(42 121 243 / 20%);
+  /* a11y: lighter blues give <4.5:1 against white; gradient shifted darker so
+     white accent text passes on every stop. */
+  --qch-gradient-primary: linear-gradient(180deg, #3568d6 0%, #2563d8 58%, #1f56cc 100%);
+}
+
+:root[data-accent='orange'] {
+  --qch-accent: #de8b23;
+  --qch-accent-hover: #bf6e0f;
+  --qch-accent-soft: rgb(222 139 35 / 10%);
+  --qch-accent-ring: rgb(222 139 35 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #f29b33 0%, #de8b23 58%, #c97a1a 100%);
+  /* a11y: orange is too light for white text; dark text passes all stops. */
+  --qch-accent-text: #1e1400;
+}
+
+:root[data-accent='purple'] {
+  --qch-accent: #7b44da;
+  --qch-accent-hover: #622fbd;
+  --qch-accent-soft: rgb(123 68 218 / 10%);
+  --qch-accent-ring: rgb(123 68 218 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #8050d5 0%, #7b44da 58%, #6b35c5 100%);
+}
+
+:root[data-accent='red'] {
+  --qch-accent: #d53e3e;
+  --qch-accent-hover: #b63232;
+  --qch-accent-soft: rgb(213 62 62 / 10%);
+  --qch-accent-ring: rgb(213 62 62 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #d53e3e 0%, #d53e3e 58%, #c52e2e 100%);
+}
+
+:root[data-accent='teal'] {
+  --qch-accent: #17a398;
+  --qch-accent-hover: #12857a;
+  --qch-accent-soft: rgb(23 163 152 / 10%);
+  --qch-accent-ring: rgb(23 163 152 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #34baad 0%, #17a398 58%, #138f87 100%);
+  /* a11y: teal is too light for white text; dark text passes all stops. */
+  --qch-accent-text: #1e1400;
+}
+
+:root[data-accent='cyan'] {
+  --qch-accent: #1298d8;
+  --qch-accent-hover: #0f79aa;
+  --qch-accent-soft: rgb(18 152 216 / 10%);
+  --qch-accent-ring: rgb(18 152 216 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #2aa8e4 0%, #1298d8 58%, #0d8ec7 100%);
+  /* a11y: cyan is too light for white text; dark text passes all stops. */
+  --qch-accent-text: #1e1400;
+}
+
+:root[data-accent='pink'] {
+  --qch-accent: #d43f86;
+  --qch-accent-hover: #bd3673;
+  --qch-accent-soft: rgb(212 63 134 / 10%);
+  --qch-accent-ring: rgb(212 63 134 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #c53a7c 0%, #c43578 58%, #b82d6a 100%);
+}
+
+:root[data-accent='yellow'] {
+  --qch-accent: #d6a828;
+  --qch-accent-hover: #bd8f20;
+  --qch-accent-text: #1e1400;
+  --qch-accent-soft: rgb(214 168 40 / 10%);
+  --qch-accent-ring: rgb(214 168 40 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #e6bf52 0%, #d6a828 58%, #c79a20 100%);
+}
+
+:root[data-theme='dark'][data-accent='green'] {
+  --qch-accent: #87d99b;
+  --qch-accent-hover: #6fcd87;
+  --qch-accent-text: #0e1411;
+  --qch-accent-soft: rgb(135 217 155 / 12%);
+  --qch-accent-ring: rgb(135 217 155 / 20%);
+  --qch-gradient-primary: linear-gradient(180deg, #95e0a7 0%, #87d99b 58%, #79cf8e 100%);
+}
+
+:root[data-theme='dark'][data-accent='blue'] {
+  --qch-accent: #8abefe;
+  --qch-accent-hover: #7aaef7;
+  --qch-accent-text: #061733;
+  --qch-accent-soft: rgb(138 190 254 / 12%);
+  --qch-accent-ring: rgb(138 190 254 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='orange'] {
+  --qch-accent: #f1b16d;
+  --qch-accent-hover: #eaa257;
+  --qch-accent-text: #2a1c00;
+  --qch-accent-soft: rgb(241 177 109 / 12%);
+  --qch-accent-ring: rgb(241 177 109 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='purple'] {
+  --qch-accent: #caa2ff;
+  --qch-accent-hover: #b58dff;
+  --qch-accent-text: #1c0c3d;
+  --qch-accent-soft: rgb(202 162 255 / 12%);
+  --qch-accent-ring: rgb(202 162 255 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='red'] {
+  --qch-accent: #f19a9a;
+  --qch-accent-hover: #dd7a7a;
+  --qch-accent-text: #301111;
+  --qch-accent-soft: rgb(241 154 154 / 12%);
+  --qch-accent-ring: rgb(241 154 154 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='teal'] {
+  --qch-accent: #6ed9d1;
+  --qch-accent-hover: #5fc3bc;
+  --qch-accent-text: #072523;
+  --qch-accent-soft: rgb(110 217 209 / 12%);
+  --qch-accent-ring: rgb(110 217 209 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='cyan'] {
+  --qch-accent: #88d2ff;
+  --qch-accent-hover: #79c5f5;
+  --qch-accent-text: #03243d;
+  --qch-accent-soft: rgb(136 210 255 / 12%);
+  --qch-accent-ring: rgb(136 210 255 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='pink'] {
+  --qch-accent: #f8a7cf;
+  --qch-accent-hover: #f58cbf;
+  --qch-accent-text: #2a0d23;
+  --qch-accent-soft: rgb(248 167 207 / 12%);
+  --qch-accent-ring: rgb(248 167 207 / 20%);
+}
+
+:root[data-theme='dark'][data-accent='yellow'] {
+  --qch-accent: #f4cb67;
+  --qch-accent-hover: #edbf53;
+  --qch-accent-text: #2f2100;
+  --qch-accent-soft: rgb(244 203 103 / 12%);
+  --qch-accent-ring: rgb(244 203 103 / 20%);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 4 — text size. --qch-square-max grows with the scale so the pieces
+   stay proportionate for low-vision users, but the board never explodes.
+   --------------------------------------------------------------------------- */
+
+:root[data-text-size='extra-small'] {
+  --qch-scale: 0.88;
+  --qch-square-max: 56px;
+}
+
+:root[data-text-size='small'] {
+  --qch-scale: 0.94;
+  --qch-square-max: 60px;
+}
+
+:root[data-text-size='medium'] {
+  --qch-scale: 1;
+  --qch-square-max: 64px;
+}
+
+:root[data-text-size='large'] {
+  --qch-scale: 1.3;
+  --qch-square-max: 72px;
+}
+
+:root[data-text-size='extra-large'] {
+  --qch-scale: 1.7;
+  --qch-square-max: 80px;
+}
+
+:root[data-text-size='huge'] {
+  --qch-scale: 2.1;
+  --qch-square-max: 88px;
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 5 — Modern. Neutrals from SPEC-modern-support-for-classic-apps.md §4.2
+   (light) and §4.1 (dark). Overrides neutrals / font / layout / chrome only.
+   --------------------------------------------------------------------------- */
+
+:root[data-ui='modern'] {
+  --qch-page: #f2efe6;
+  --qch-rail: #f2efe6;
+  --qch-surface: #ffffff;
+  --qch-surface-alt: #f7f4ec;
+  --qch-control: #f7f4ec;
+  --qch-control-hover: #ddd9d0;
+  --qch-border: #ddd9d0;
+  --qch-border-strong: #ddd9d0;
+  --qch-text-primary: #0d0d0d;
+  --qch-text-secondary: #6b6b6b;
+  --qch-muted: #6b6b6b;
+
+  /* §4.8 — flat with borders, not floating with shadows. */
+  --qch-shadow: none;
+  --qch-shadow-hover: 0 0 0 1.5px var(--qch-border);
+  --qch-modal-backdrop: rgb(13 13 13 / 38%);
+
+  /* §4.5 — centred max-width column, not full bleed. */
+  --qch-content-width: min(900px, 100%);
+  --qch-content-pad: 32px;
+
+  --qch-font-body: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --qch-font-heading: var(--qch-font-body);
+
+  /* board-3: Modern board — cool neutral squares matched to the warm-cream
+     Modern canvas. Still independent of the accent. */
+  --qch-square-light: #e8e4da;
+  --qch-square-dark: #9a958a;
+  --qch-square-light-hover: #dcd7cb;
+  --qch-square-dark-hover: #8b867b;
+  --qch-piece: #0d0d0d;
+  --qch-piece-halo: rgb(255 255 255 / 60%);
+  --qch-board-frame: #ddd9d0;
+  --qch-board-frame-width: 1.5px;
+  --qch-square-selected: #0d0d0d;
+  --qch-square-target: rgb(13 13 13 / 40%);
+  --qch-square-check: #bd332e;
+  --qch-square-last-move: rgb(13 13 13 / 32%);
+
+  font-family: var(--qch-font-body);
+}
+
+/* Compound selector is required so Modern dark beats the plain dark block. */
+:root[data-theme='dark'][data-ui='modern'] {
+  --qch-page: #111318;
+  --qch-rail: #111318;
+  --qch-surface: #1c1f28;
+  --qch-surface-alt: #222633;
+  --qch-control: #222633;
+  --qch-control-hover: #2e3340;
+  --qch-border: #2e3340;
+  --qch-border-strong: #2e3340;
+  --qch-text-primary: #e4e8f0;
+  --qch-text-secondary: #8892a4;
+  --qch-muted: #6f7a8c;
+  --qch-shadow: none;
+  --qch-shadow-hover: 0 0 0 1.5px var(--qch-border);
+  --qch-modal-backdrop: rgb(0 0 0 / 45%);
+
+  /* board-3: Modern dark board — bluish-gray, no green, matching §4.1. */
+  --qch-square-light: #8d94a6;
+  --qch-square-dark: #454b5c;
+  --qch-square-light-hover: #7f8698;
+  --qch-square-dark-hover: #3b4152;
+  --qch-piece: #10131a;
+  --qch-piece-halo: rgb(228 232 240 / 42%);
+  --qch-board-frame: #2e3340;
+  --qch-square-selected: #e4e8f0;
+  --qch-square-target: rgb(16 19 26 / 55%);
+  --qch-square-check: #ef8b84;
+  --qch-square-last-move: rgb(228 232 240 / 34%);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 6 — Fun. Tokens from SPEC-fun-support-for-qortium-apps.md §4.
+   Shared identity tokens keep the spec's --fun-* names (§6.3).
+   --------------------------------------------------------------------------- */
+
+:root[data-ui='fun'] {
+  --fun-ink: #07100c;
+  --fun-outline: var(--fun-ink);
+  --fun-focus: #07100c;
+  --fun-warm: #ffd447;
+  --fun-grid-line: rgb(7 16 12 / 3%);
+  --fun-radius-sm: 14px 7px 12px 8px / 8px 12px 7px 14px;
+  --fun-radius-md: 22px 9px 19px 10px / 10px 19px 9px 22px;
+  --fun-radius-pill: 255px 18px 230px 18px / 18px 230px 18px 255px;
+  --fun-shadow-card: 5px 5px 0 var(--fun-ink);
+  --fun-shadow-card-hover: 7px 7px 0 var(--fun-ink);
+  --fun-shadow-control: 3px 3px 0 var(--fun-ink);
+  --fun-shadow-primary: 4px 4px 0 var(--fun-ink);
+  --fun-shadow-primary-hover: 6px 6px 0 var(--fun-ink);
+  --fun-shadow-primary-active: 1px 1px 0 var(--fun-ink);
+
+  --qch-radius: var(--fun-radius-md);
+  --qch-radius-sm: var(--fun-radius-sm);
+  --qch-radius-pill: var(--fun-radius-pill);
+  --qch-page: #eaf4ff;
+  --qch-rail: #dfeaf3;
+  --qch-surface: #fffef8;
+  --qch-surface-alt: #f2f7ed;
+  --qch-control: #edf5ec;
+  --qch-control-hover: #dcebdc;
+  --qch-border: var(--fun-outline);
+  --qch-border-strong: var(--fun-outline);
+  --qch-text-primary: #17201d;
+  --qch-text-secondary: #3f4e49;
+  --qch-muted: #586761;
+  --qch-shadow: var(--fun-shadow-card);
+  --qch-shadow-hover: var(--fun-shadow-card-hover);
+
+  --qch-font-body: "Comic Neue", "Trebuchet MS", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --qch-font-heading: "Fredoka", "Comic Neue", ui-sans-serif, system-ui, sans-serif;
+
+  /* board-4: Fun board — brighter, higher-chroma squares to match the playful
+     canvas, but still a plain two-tone board with no accent derivation and no
+     decorative grid (see the .board-grid rules: §5.3/§8 keep gameplay
+     surfaces comparatively flat). */
+  --qch-square-light: #fdf3cf;
+  --qch-square-dark: #6fae7e;
+  --qch-square-light-hover: #f3e6ba;
+  --qch-square-dark-hover: #5f9c6e;
+  --qch-piece: #07100c;
+  --qch-piece-halo: rgb(255 254 248 / 58%);
+  --qch-board-frame: var(--fun-outline);
+  --qch-board-frame-width: 3px;
+  --qch-square-selected: #07100c;
+  --qch-square-target: rgb(7 16 12 / 48%);
+  --qch-square-check: #bd332e;
+  --qch-square-last-move: rgb(255 212 71 / 78%);
+
+  font-family: var(--qch-font-body);
+}
+
+:root[data-theme='dark'][data-ui='fun'] {
+  --fun-ink: #020504;
+  /* Near-black ink alone is invisible as a boundary on dark surfaces, so dark
+     Fun uses a lighter outline while keeping black hard shadows (§4.1). */
+  --fun-outline: #9bb7ad;
+  --fun-focus: #fff9ed;
+  --fun-grid-line: rgb(255 249 237 / 4%);
+  --qch-page: #07100f;
+  --qch-rail: #091411;
+  --qch-surface: #172420;
+  --qch-surface-alt: #1d2d28;
+  --qch-control: #263a34;
+  --qch-control-hover: #314941;
+  --qch-border: var(--fun-outline);
+  --qch-border-strong: var(--fun-outline);
+  --qch-text-primary: #fff9ed;
+  --qch-text-secondary: #d5dfda;
+  --qch-muted: #b5c3bd;
+
+  --qch-square-light: #b7cf9a;
+  --qch-square-dark: #4c7a5b;
+  --qch-square-light-hover: #a7bf8b;
+  --qch-square-dark-hover: #416a4e;
+  --qch-piece: #020504;
+  --qch-piece-halo: rgb(255 249 237 / 40%);
+  --qch-square-selected: #fff9ed;
+  --qch-square-target: rgb(2 5 4 / 55%);
+  --qch-square-check: #ef8b84;
+  --qch-square-last-move: rgb(255 212 71 / 68%);
+}
+
+/* ===========================================================================
+   Base (Classic) component styles. Everything below resolves through tokens.
+   =========================================================================== */
+
+:root {
+  background: var(--qch-page);
+  color: var(--qch-text-primary);
+  font-family: var(--qch-font-body);
+  font-size: var(--qch-text);
   font-synthesis: none;
+  line-height: 1.45;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -21,46 +548,90 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--qch-page);
+  color: var(--qch-text-primary);
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
 button {
-  border: 1px solid #1c2a2f;
-  border-radius: 6px;
-  background: #1c2a2f;
-  color: #ffffff;
+  border: 1px solid var(--qch-accent-hover);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-gradient-primary);
+  color: var(--qch-accent-text);
   cursor: pointer;
   font-weight: 700;
   min-height: 42px;
   padding: 0 16px;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
-button:hover {
-  background: #2d4249;
+button:hover:not(:disabled) {
+  border-color: var(--qch-accent);
+  box-shadow: 0 0 0 3px var(--qch-accent-ring);
 }
 
-input {
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+/* a11y: a blanket opacity fade drops effective text contrast below 4.5:1.
+   Disabled controls instead switch to a neutral greyed style at full opacity —
+   still unmistakably disabled via the greying + cursor. */
+button:disabled {
+  background: var(--qch-control);
+  border-color: var(--qch-border);
+  color: var(--qch-text-secondary);
+  box-shadow: none;
+}
+
+input,
+select,
+textarea {
   min-width: 0;
   width: 100%;
   min-height: 42px;
-  border: 1px solid #b8c5be;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #172025;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-surface);
+  color: var(--qch-text-primary);
+  outline: none;
   padding: 0 14px;
 }
 
+select {
+  padding: 0 10px;
+  width: auto;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--qch-accent);
+  box-shadow: 0 0 0 3px var(--qch-accent-ring);
+}
+
+/* ---- shell ---------------------------------------------------------------- */
+
 .app-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: var(--qch-content-pad);
 }
 
 .workspace {
-  width: min(1120px, 100%);
+  width: var(--qch-content-width);
   margin: 0 auto;
 }
 
@@ -72,32 +643,89 @@ input {
   padding: 12px 0 24px;
 }
 
+.topbar-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
 .eyebrow,
 .panel-label {
   margin: 0;
-  color: #66746e;
-  font-size: 12px;
+  color: var(--qch-muted);
+  font-size: var(--qch-text-small);
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
+  color: var(--qch-text-primary);
+  font-family: var(--qch-font-heading);
   letter-spacing: 0;
 }
 
 h1 {
-  color: #10242b;
-  font-size: 34px;
+  font-size: var(--qch-text-title);
   line-height: 1.1;
 }
 
 h2 {
-  color: #15272d;
-  font-size: 22px;
+  font-size: var(--qch-text-heading);
 }
+
+h3 {
+  font-size: var(--qch-text);
+}
+
+.runtime-note {
+  color: var(--qch-muted);
+  font-size: var(--qch-text-small);
+  margin: 0;
+  text-align: right;
+}
+
+.intro {
+  color: var(--qch-text-secondary);
+  margin: 8px 0 20px;
+}
+
+.muted {
+  color: var(--qch-muted);
+}
+
+/* ---- view tabs ------------------------------------------------------------ */
+
+.view-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.view-tabs button {
+  min-height: 34px;
+  background: transparent;
+  color: var(--qch-text-secondary);
+  border: 1px solid var(--qch-border);
+}
+
+.view-tabs button:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  color: var(--qch-text-primary);
+}
+
+.view-tabs button.active {
+  background: var(--qch-accent-soft);
+  border-color: var(--qch-accent-ring);
+  /* a11y: accent-on-accent-soft fails 4.5:1 for several accents. The selected
+     state is carried by the tinted fill + ring; the label uses text-primary. */
+  color: var(--qch-text-primary);
+}
+
+/* ---- panels / generic surfaces -------------------------------------------- */
 
 .status-grid {
   display: grid;
@@ -107,9 +735,10 @@ h2 {
 
 .panel,
 .resource-section {
-  border: 1px solid #d4ddd8;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius);
+  background: var(--qch-surface);
+  box-shadow: var(--qch-shadow);
 }
 
 .panel {
@@ -120,31 +749,15 @@ h2 {
 }
 
 .panel strong {
-  color: #14252b;
-  font-size: 22px;
+  color: var(--qch-text-primary);
+  font-size: var(--qch-text-heading);
   line-height: 1.2;
 }
 
 .panel span:last-child,
 .section-heading p,
-.resource-item span,
-.empty-state {
-  color: #66746e;
-}
-
-.notice {
-  margin-top: 12px;
-  border: 1px solid #d6b75e;
-  border-radius: 8px;
-  background: #fff7df;
-  color: #5d4812;
-  padding: 12px 14px;
-}
-
-.notice.muted {
-  border-color: #cbd6d0;
-  background: #f6f8f7;
-  color: #62716b;
+.resource-item span {
+  color: var(--qch-muted);
 }
 
 .resource-section {
@@ -180,8 +793,8 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #e0e7e3;
-  border-radius: 8px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius);
   padding: 12px;
 }
 
@@ -198,56 +811,58 @@ h2 {
 
 .status-pill {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: #dfe9e4;
-  color: #203139;
-  font-size: 12px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-pill);
+  background: var(--qch-control);
+  color: var(--qch-text-secondary);
+  font-size: var(--qch-text-small);
   font-weight: 800;
   padding: 5px 8px;
   text-transform: uppercase;
 }
 
 .empty-state {
-  border: 1px dashed #cbd6d0;
-  border-radius: 8px;
+  border: 1px dashed var(--qch-border-strong);
+  border-radius: var(--qch-radius);
+  color: var(--qch-muted);
   padding: 18px;
   text-align: center;
 }
 
-@media (max-width: 720px) {
-  .app-shell {
-    padding: 16px;
-  }
+/* ---- notices -------------------------------------------------------------- */
 
-  .topbar,
-  .resource-item {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  h1 {
-    font-size: 28px;
-  }
-
-  .status-grid,
-  .search-row {
-    grid-template-columns: 1fr;
-  }
+.notice {
+  border: 1px solid color-mix(in srgb, var(--qch-warning) 35%, transparent);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-warning-soft);
+  color: var(--qch-warning);
+  padding: 10px 14px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
 }
 
-/* --- chess board --- */
-
-.runtime-note {
-  color: #5a6b64;
-  font-size: 14px;
-  margin: 0;
-  text-align: right;
+.notice .muted {
+  color: inherit;
+  opacity: 0.85;
 }
 
-.intro {
-  color: #41504a;
-  margin: 8px 0 20px;
+.notice.muted {
+  border-color: var(--qch-border);
+  background: var(--qch-surface-alt);
+  color: var(--qch-text-secondary);
 }
+
+.notice--error {
+  border-color: color-mix(in srgb, var(--qch-error) 35%, transparent);
+  background: var(--qch-error-soft);
+  color: var(--qch-error);
+}
+
+/* ===========================================================================
+   Board — an immersive surface. Deliberately flatter and calmer than the rest
+   of the chrome in every UI family (Fun spec §5.3 / §8: never rotate or tilt
+   gameplay surfaces, and never put the decorative grid behind them).
+   =========================================================================== */
 
 .board-layout {
   display: flex;
@@ -258,36 +873,98 @@ h2 {
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(36px, 64px));
-  border: 2px solid #1c2a2f;
+  grid-template-columns: repeat(8, minmax(30px, var(--qch-square-max)));
+  border: var(--qch-board-frame-width) solid var(--qch-board-frame);
   border-radius: 4px;
   overflow: hidden;
   width: fit-content;
+  max-width: 100%;
+  /* board-5: never inherits a decorative page background, in any UI family. */
+  background: var(--qch-square-light);
+  background-image: none;
 }
 
 .board-square {
   aspect-ratio: 1;
   min-height: 0;
   padding: 0;
+  margin: 0;
   border: none;
   border-radius: 0;
-  font-size: clamp(24px, 4.5vw, 40px);
+  box-shadow: none;
+  font-size: min(calc(var(--qch-square-max) * 0.72), 9vw);
+  font-weight: 400;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #14181a;
+  position: relative;
+  color: var(--qch-piece);
+  /* The hollow "white" glyphs and the filled "black" glyphs share one ink
+     colour; a soft halo keeps the hollow ones legible on the dark squares. */
+  text-shadow: 0 0 2px var(--qch-piece-halo);
   cursor: pointer;
+  transition: background-color 120ms ease;
 }
 
-.board-square.light { background: #e9edd8; }
-.board-square.dark { background: #7d945d; }
-.board-square.light:hover { background: #dde2c4; }
-.board-square.dark:hover { background: #6d834f; }
-.board-square.selected { outline: 3px solid #d8a03d; outline-offset: -3px; }
-.board-square.target { box-shadow: inset 0 0 0 999px rgba(216, 160, 61, 0.35); }
+.board-square.light {
+  background: var(--qch-square-light);
+}
+
+.board-square.dark {
+  background: var(--qch-square-dark);
+}
+
+.board-square.light:hover:not(:disabled) {
+  background: var(--qch-square-light-hover);
+  box-shadow: none;
+}
+
+.board-square.dark:hover:not(:disabled) {
+  background: var(--qch-square-dark-hover);
+  box-shadow: none;
+}
+
+/* board-6: indicators are distinguishable WITHOUT colour. Each state carries
+   its own geometry:
+     selected  — solid inset ring
+     target    — centred dot (shape, not a wash)
+     last-move — inset band along the square edge (forward-declared)
+     check     — dashed inset ring (forward-declared)
+   The last two classes are not emitted by Board.tsx yet; the rules are here so
+   the markup can adopt them without another styling pass. */
+.board-square.selected {
+  outline: 3px solid var(--qch-square-selected);
+  outline-offset: -3px;
+}
+
+.board-square.target::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: var(--qch-square-target);
+  pointer-events: none;
+}
+
+.board-square.last-move {
+  box-shadow: inset 0 0 0 5px var(--qch-square-last-move);
+}
+
+.board-square.check {
+  outline: 3px dashed var(--qch-square-check);
+  outline-offset: -3px;
+}
+
+/* A square can be several things at once; keep every cue readable. */
+.board-square.selected.check {
+  outline: 3px dashed var(--qch-square-check);
+  box-shadow: inset 0 0 0 6px var(--qch-square-selected);
+}
 
 .board-status {
+  color: var(--qch-text-primary);
   font-weight: 700;
   margin: 12px 0 0;
 }
@@ -297,6 +974,7 @@ h2 {
   flex-direction: column;
   gap: 12px;
   min-width: 180px;
+  flex: 1 1 260px;
 }
 
 .board-actions {
@@ -304,41 +982,21 @@ h2 {
   gap: 8px;
 }
 
+.game-actions {
+  flex-wrap: wrap;
+}
+
 .board-moves {
   margin: 0;
   padding-left: 20px;
   max-height: 420px;
   overflow-y: auto;
-  font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
-  font-size: 14px;
-  color: #33413b;
+  font-family: var(--qch-font-mono);
+  font-size: var(--qch-text-small);
+  color: var(--qch-text-secondary);
 }
 
-/* --- lobby & game room --- */
-
-.topbar-right {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.view-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.view-tabs button {
-  min-height: 34px;
-  background: transparent;
-  color: #1c2a2f;
-  border: 1px solid #b8c5be;
-}
-
-.view-tabs button.active {
-  background: #1c2a2f;
-  color: #ffffff;
-}
+/* ---- lobby & game room ----------------------------------------------------- */
 
 .lobby-section {
   margin: 20px 0;
@@ -347,7 +1005,6 @@ h2 {
 .lobby-section h2,
 .lobby-section h3 {
   margin: 0 0 8px;
-  font-size: 18px;
 }
 
 .game-list {
@@ -367,14 +1024,18 @@ h2 {
 }
 
 .game-link {
-  background: #ffffff;
-  color: #1c2a2f;
-  border: 1px solid #b8c5be;
+  background: var(--qch-surface);
+  color: var(--qch-text-primary);
+  border: 1px solid var(--qch-border);
+  box-shadow: var(--qch-shadow);
   font-weight: 600;
+  text-align: start;
 }
 
-.game-link:hover {
-  background: #eef2ef;
+.game-link:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  border-color: var(--qch-accent);
+  box-shadow: var(--qch-shadow-hover), 0 0 0 3px var(--qch-accent-ring);
 }
 
 .invite-form {
@@ -388,41 +1049,12 @@ h2 {
   max-width: 280px;
 }
 
-.invite-form select {
-  font: inherit;
-  min-height: 42px;
-  border: 1px solid #b8c5be;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: #ffffff;
-}
-
-.notice {
-  background: #fff7e0;
-  border: 1px solid #e0cf9a;
-  border-radius: 6px;
-  padding: 10px 14px;
-  margin: 12px 0;
-}
-
-.muted {
-  color: #6a7a72;
-}
-
 .game-room-header {
   display: flex;
   gap: 14px;
   align-items: center;
-  margin-bottom: 6px;
-}
-
-.game-room-header h2 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.game-actions {
   flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .game-chat {
@@ -438,10 +1070,541 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 14px;
+  font-size: var(--qch-text-small);
+  overflow-wrap: anywhere;
 }
 
 .chat-form {
   display: flex;
   gap: 8px;
+}
+
+/* ---- focus ---------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--qch-accent);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* Keyboard focus must remain visible on the board without being confused with
+   the "selected" ring — it sits outside the square rather than inset. */
+.board-square:focus-visible {
+  outline: 3px solid var(--qch-accent);
+  outline-offset: -6px;
+  z-index: 1;
+}
+
+.sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* ===========================================================================
+   Modern — scoped chrome. Neutrals/layout/chrome only, never the accent.
+   Each scoped base rule re-asserts the affected :hover/.active/.selected
+   states under the same scope: a scoped base out-specifies a bare `.foo:hover`
+   and would otherwise silently kill hover feedback.
+   =========================================================================== */
+
+:root[data-ui='modern'] body {
+  background: var(--qch-page);
+}
+
+:root[data-ui='modern'] .app-shell {
+  padding-block: 32px;
+  padding-inline: var(--qch-content-pad);
+}
+
+:root[data-ui='modern'] .topbar {
+  padding-bottom: 16px;
+}
+
+:root[data-ui='modern'] .panel,
+:root[data-ui='modern'] .resource-section,
+:root[data-ui='modern'] .resource-item,
+:root[data-ui='modern'] .empty-state,
+:root[data-ui='modern'] .game-link {
+  border-width: 1.5px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+:root[data-ui='modern'] .game-link:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  border-color: var(--qch-accent);
+  box-shadow: 0 0 0 1.5px var(--qch-accent-ring);
+}
+
+:root[data-ui='modern'] input,
+:root[data-ui='modern'] select,
+:root[data-ui='modern'] textarea,
+:root[data-ui='modern'] .notice,
+:root[data-ui='modern'] .status-pill {
+  border-width: 1.5px;
+  border-radius: 8px;
+}
+
+:root[data-ui='modern'] input:focus,
+:root[data-ui='modern'] select:focus,
+:root[data-ui='modern'] textarea:focus {
+  border-color: var(--qch-accent);
+  box-shadow: 0 0 0 3px var(--qch-accent-ring);
+}
+
+:root[data-ui='modern'] .status-pill {
+  border-radius: 50px;
+}
+
+/* §4.7 — pill buttons. */
+:root[data-ui='modern'] button {
+  border-width: 1.5px;
+  border-radius: 50px;
+}
+
+:root[data-ui='modern'] button:hover:not(:disabled) {
+  border-color: var(--qch-accent);
+  box-shadow: 0 0 0 3px var(--qch-accent-ring);
+}
+
+:root[data-ui='modern'] button:disabled {
+  background: var(--qch-control);
+  border-color: var(--qch-border);
+  color: var(--qch-text-secondary);
+  box-shadow: none;
+}
+
+:root[data-ui='modern'] .view-tabs button {
+  background: transparent;
+  border-color: var(--qch-border);
+  color: var(--qch-text-secondary);
+}
+
+:root[data-ui='modern'] .view-tabs button:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  color: var(--qch-text-primary);
+}
+
+:root[data-ui='modern'] .view-tabs button.active {
+  background: var(--qch-accent-soft);
+  border-color: var(--qch-accent-ring);
+  color: var(--qch-text-primary);
+}
+
+/* The board keeps square corners in Modern — a pill/rounded board would break
+   the 8x8 read. Only the outer frame follows the Modern radius. */
+:root[data-ui='modern'] .board-grid {
+  border-width: var(--qch-board-frame-width);
+  border-radius: 8px;
+}
+
+:root[data-ui='modern'] .board-square {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-ui='modern'] .board-square.light:hover:not(:disabled) {
+  background: var(--qch-square-light-hover);
+}
+
+:root[data-ui='modern'] .board-square.dark:hover:not(:disabled) {
+  background: var(--qch-square-dark-hover);
+}
+
+:root[data-ui='modern'] .board-square.selected {
+  outline: 3px solid var(--qch-square-selected);
+  outline-offset: -3px;
+}
+
+:root[data-ui='modern'] .board-square.last-move {
+  box-shadow: inset 0 0 0 5px var(--qch-square-last-move);
+}
+
+/* ===========================================================================
+   Fun — scoped chrome.
+   =========================================================================== */
+
+:root[data-ui='fun'] body {
+  background: var(--qch-page);
+}
+
+:root[data-ui='fun'] h1,
+:root[data-ui='fun'] h2,
+:root[data-ui='fun'] h3,
+:root[data-ui='fun'] button,
+:root[data-ui='fun'] .eyebrow,
+:root[data-ui='fun'] .panel-label,
+:root[data-ui='fun'] .status-pill,
+:root[data-ui='fun'] .board-status {
+  font-family: var(--qch-font-heading);
+  font-weight: 700;
+}
+
+/* §4.7 — decorative canvas. Applied to the page shell only; §8 keeps it away
+   from gameplay surfaces (see the .board-grid reset below). */
+:root[data-ui='fun'] .app-shell {
+  background-color: var(--qch-page);
+  background-image:
+    radial-gradient(circle at 50% 0, var(--qch-accent-soft), transparent 36%),
+    linear-gradient(var(--fun-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--fun-grid-line) 1px, transparent 1px);
+  background-size: auto, 28px 28px, 28px 28px;
+}
+
+/* §5.4 — strong but structurally unchanged topbar. */
+:root[data-ui='fun'] .topbar {
+  border-bottom: 3px solid var(--fun-outline);
+  box-shadow: 0 4px 0 var(--fun-ink);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+/* The one allowed decorative tilt: a short heading underline. Reset below at
+   narrow widths, huge text and reduced motion. */
+:root[data-ui='fun'] .topbar h1 {
+  position: relative;
+}
+
+:root[data-ui='fun'] .topbar h1::after {
+  background: linear-gradient(90deg, var(--qch-accent), var(--fun-warm));
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-pill);
+  bottom: -8px;
+  box-shadow: 2px 2px 0 var(--fun-ink);
+  content: '';
+  height: 6px;
+  inset-inline-start: 0;
+  position: absolute;
+  transform: rotate(-1deg);
+  width: 4.5rem;
+}
+
+:root[data-ui='fun'] .panel,
+:root[data-ui='fun'] .resource-section,
+:root[data-ui='fun'] .empty-state,
+:root[data-ui='fun'] .notice,
+:root[data-ui='fun'] .game-link {
+  border: 3px solid var(--fun-outline);
+  border-radius: var(--fun-radius-md);
+  box-shadow: var(--fun-shadow-card);
+}
+
+/* The Fun `border` shorthand above out-specifies the notice variants'
+   border-color, so re-assert them under the same scope. */
+:root[data-ui='fun'] .notice--error {
+  border-color: color-mix(in srgb, var(--qch-error) 60%, var(--fun-outline));
+}
+
+:root[data-ui='fun'] .notice.muted {
+  border-color: var(--fun-outline);
+}
+
+:root[data-ui='fun'] .resource-item {
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: var(--fun-shadow-control);
+}
+
+:root[data-theme='dark'][data-ui='fun'] .panel,
+:root[data-theme='dark'][data-ui='fun'] .resource-section,
+:root[data-theme='dark'][data-ui='fun'] .empty-state,
+:root[data-theme='dark'][data-ui='fun'] .game-link {
+  box-shadow: var(--fun-shadow-card), inset 0 0 0 1px rgb(255 255 255 / 8%);
+}
+
+:root[data-ui='fun'] .status-pill {
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-pill);
+}
+
+:root[data-ui='fun'] input,
+:root[data-ui='fun'] select,
+:root[data-ui='fun'] textarea {
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: 2px 2px 0 var(--fun-ink);
+}
+
+:root[data-ui='fun'] input:focus,
+:root[data-ui='fun'] select:focus,
+:root[data-ui='fun'] textarea:focus {
+  border-color: var(--fun-outline);
+  box-shadow: 2px 2px 0 var(--fun-ink);
+}
+
+:root[data-ui='fun'] button {
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: var(--fun-shadow-primary);
+}
+
+:root[data-ui='fun'] button:hover:not(:disabled) {
+  border-color: var(--fun-outline);
+  box-shadow: var(--fun-shadow-primary-hover);
+  transform: translate(-1px, -2px) rotate(-0.2deg);
+}
+
+:root[data-ui='fun'] button:active:not(:disabled) {
+  box-shadow: var(--fun-shadow-primary-active);
+  transform: translate(2px, 2px) scale(0.98);
+}
+
+:root[data-ui='fun'] button:disabled {
+  background: var(--qch-control);
+  border-color: var(--fun-outline);
+  color: var(--qch-text-secondary);
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-ui='fun'] .view-tabs button {
+  background: transparent;
+  border: 2px solid var(--fun-outline);
+  box-shadow: var(--fun-shadow-control);
+  color: var(--qch-text-secondary);
+}
+
+:root[data-ui='fun'] .view-tabs button:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  color: var(--qch-text-primary);
+  box-shadow: var(--fun-shadow-control);
+  transform: translate(-1px, -1px);
+}
+
+:root[data-ui='fun'] .view-tabs button.active {
+  background: color-mix(in srgb, var(--qch-accent) 18%, var(--qch-surface));
+  border-color: var(--fun-outline);
+  color: var(--qch-text-primary);
+}
+
+:root[data-ui='fun'] .game-link:hover:not(:disabled) {
+  background: var(--qch-control-hover);
+  border-color: var(--fun-outline);
+  box-shadow: var(--fun-shadow-card-hover);
+  transform: translate(-1px, -2px);
+}
+
+/* §4.5 — a dedicated high-contrast focus outline rather than the raw accent. */
+:root[data-ui='fun'] :focus-visible {
+  outline: 3px solid var(--fun-focus);
+  outline-offset: 3px;
+}
+
+:root[data-ui='fun'] input:focus-visible,
+:root[data-ui='fun'] select:focus-visible,
+:root[data-ui='fun'] textarea:focus-visible {
+  outline-offset: 2px;
+}
+
+/* -- Fun board: the deliberate exception ------------------------------------
+   §5.3 / §8: gameplay surfaces stay flat and untilted, and the decorative grid
+   never sits behind them. The board gets Fun's ink outline and nothing else —
+   no wobbly radius on squares, no hard shadow per square, no rotation. */
+:root[data-ui='fun'] .board-grid {
+  background-image: none;
+  border: var(--qch-board-frame-width) solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: var(--fun-shadow-card);
+  transform: none;
+}
+
+:root[data-ui='fun'] .board-square {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--qch-font-body);
+  transform: none;
+}
+
+:root[data-ui='fun'] .board-square:hover:not(:disabled),
+:root[data-ui='fun'] .board-square:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-ui='fun'] .board-square.light:hover:not(:disabled) {
+  background: var(--qch-square-light-hover);
+}
+
+:root[data-ui='fun'] .board-square.dark:hover:not(:disabled) {
+  background: var(--qch-square-dark-hover);
+}
+
+:root[data-ui='fun'] .board-square.selected {
+  outline: 3px solid var(--qch-square-selected);
+  outline-offset: -3px;
+  box-shadow: none;
+}
+
+:root[data-ui='fun'] .board-square.last-move {
+  box-shadow: inset 0 0 0 5px var(--qch-square-last-move);
+}
+
+:root[data-ui='fun'] .board-square.check {
+  outline: 3px dashed var(--qch-square-check);
+  outline-offset: -3px;
+}
+
+:root[data-ui='fun'] .board-square:focus-visible {
+  outline: 3px solid var(--fun-focus);
+  outline-offset: -6px;
+}
+
+/* ===========================================================================
+   Responsive
+   =========================================================================== */
+
+@media (max-width: 900px) {
+  :root[data-ui='modern'] {
+    --qch-content-pad: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* §5.6 — drop decorative rotations and shrink hard shadows where space is
+     tight. Placed after the Fun hover rules so it wins on specificity. */
+  :root[data-ui='fun'] .panel,
+  :root[data-ui='fun'] .resource-section,
+  :root[data-ui='fun'] .empty-state,
+  :root[data-ui='fun'] .notice,
+  :root[data-ui='fun'] .game-link,
+  :root[data-ui='fun'] .game-link:hover:not(:disabled),
+  :root[data-ui='fun'] .board-grid {
+    box-shadow: 3px 3px 0 var(--fun-ink);
+    transform: none;
+  }
+
+  :root[data-ui='fun'] button:hover:not(:disabled),
+  :root[data-ui='fun'] button:active:not(:disabled),
+  :root[data-ui='fun'] .view-tabs button:hover:not(:disabled) {
+    box-shadow: var(--fun-shadow-control);
+    transform: none;
+  }
+
+  :root[data-ui='fun'] .topbar h1::after {
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .topbar,
+  .resource-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topbar-right {
+    align-items: stretch;
+  }
+
+  .runtime-note {
+    text-align: start;
+  }
+
+  .status-grid,
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .board-layout {
+    gap: 16px;
+  }
+
+  .invite-form input {
+    max-width: none;
+  }
+}
+
+/* §5.6 — the same resets at extra-large / huge text, where the board and the
+   chrome are already competing for width. */
+:root[data-ui='fun'][data-text-size='extra-large'] .panel,
+:root[data-ui='fun'][data-text-size='extra-large'] .resource-section,
+:root[data-ui='fun'][data-text-size='extra-large'] .empty-state,
+:root[data-ui='fun'][data-text-size='extra-large'] .notice,
+:root[data-ui='fun'][data-text-size='extra-large'] .game-link,
+:root[data-ui='fun'][data-text-size='extra-large'] .game-link:hover:not(:disabled),
+:root[data-ui='fun'][data-text-size='extra-large'] .board-grid,
+:root[data-ui='fun'][data-text-size='huge'] .panel,
+:root[data-ui='fun'][data-text-size='huge'] .resource-section,
+:root[data-ui='fun'][data-text-size='huge'] .empty-state,
+:root[data-ui='fun'][data-text-size='huge'] .notice,
+:root[data-ui='fun'][data-text-size='huge'] .game-link,
+:root[data-ui='fun'][data-text-size='huge'] .game-link:hover:not(:disabled),
+:root[data-ui='fun'][data-text-size='huge'] .board-grid {
+  box-shadow: 3px 3px 0 var(--fun-ink);
+  transform: none;
+}
+
+:root[data-ui='fun'][data-text-size='extra-large'] button:hover:not(:disabled),
+:root[data-ui='fun'][data-text-size='extra-large'] button:active:not(:disabled),
+:root[data-ui='fun'][data-text-size='extra-large'] .view-tabs button:hover:not(:disabled),
+:root[data-ui='fun'][data-text-size='huge'] button:hover:not(:disabled),
+:root[data-ui='fun'][data-text-size='huge'] button:active:not(:disabled),
+:root[data-ui='fun'][data-text-size='huge'] .view-tabs button:hover:not(:disabled) {
+  box-shadow: var(--fun-shadow-control);
+  transform: none;
+}
+
+:root[data-ui='fun'][data-text-size='extra-large'] .topbar h1::after,
+:root[data-ui='fun'][data-text-size='huge'] .topbar h1::after {
+  transform: none;
+}
+
+/* ===========================================================================
+   Reduced motion — §5.5: zeroing transition duration is NOT enough, the Fun
+   transforms must be explicitly neutralised or hover/press still jumps.
+   =========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-ui='fun'] .panel,
+  :root[data-ui='fun'] .game-link,
+  :root[data-ui='fun'] .game-link:hover:not(:disabled),
+  :root[data-ui='fun'] .board-grid,
+  :root[data-ui='fun'] .board-square,
+  :root[data-ui='fun'] .board-square:hover:not(:disabled),
+  :root[data-ui='fun'] button:hover:not(:disabled),
+  :root[data-ui='fun'] button:active:not(:disabled),
+  :root[data-ui='fun'] .view-tabs button:hover:not(:disabled),
+  :root[data-ui='fun'] .topbar h1::after {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* resp: enlarge interactive targets on touch/coarse pointers (WCAG 2.5.5).
+   Board squares are excluded — they are already sized by --qch-square-max and
+   a forced min-height would break their 1:1 aspect ratio. */
+@media (pointer: coarse) {
+  button:not(.board-square),
+  input,
+  select {
+    min-height: 44px;
+  }
+
+  .view-tabs button {
+    min-height: 40px;
+  }
 }
