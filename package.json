@@ -1,6 +1,6 @@
 {
   "name": "qortium-chess",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "license": "0BSD",
   "description": "A QDN app for Qortium: Chess.",

@@ -104,7 +104,7 @@ Inherited from QC1 Part I, adapter-backed: (1) envelope shape + schema; (2) sign
 ## 6. Transports
 
 ### 6.1 Live play — CHAT (MVP)
-- **Public games:** a dedicated Previewnet group (create `Chess` group; id TBD-2 — QC1's Qortal group 853 does not transfer). Posting requires membership (Core enforces); offer in-app JOIN_GROUP. Spectating needs no membership (search/websocket read).
+- **Public games:** the `Chess` group — **created on Previewnet 2026-07-20: groupId 14**, owner `QaLdnApWW3hps1qXM8cpsL1pVgw7RtyJmN` (the publishing account), open membership, approvalThreshold NONE. Posting requires membership (Core enforces); offer in-app JOIN_GROUP. Spectating needs no membership (search/websocket read).
 - **Private games:** Qortium's E2E-encrypted direct chat (`SEND_CHAT_MESSAGE` + `SEARCH_PRIVATE_DIRECT_CHAT_MESSAGES` family) — a real upgrade over QC1's plain DMs: private games are actually private.
 - **Bridge actions used (all exist in Home today):** `SEND_CHAT_MESSAGE`, `SEARCH_CHAT_MESSAGES`, private-chat search/key actions, `GET_HOST_INFO`, `JOIN_GROUP`, QDN publish/fetch/search (§6.2). Live updates via node websocket `/websockets/chat/messages` (pattern proven in qortium-chat) with search-polling fallback.
 - Expiry: chat retention is node-configurable, default 24 h. UI shows the QC1-style "expires in ~HH:MM" from the latest valid message. An in-progress game older than retention is simply gone from live view — but see 6.2.
@@ -151,7 +151,7 @@ QC1's state machine, kept: `Pending —join→ AwaitingApproval —approve→ Ac
 All original open questions were answered by QuickMythril on 2026-07-20; decisions folded into the sections above:
 
 1. **TBD-1 → resolved (§4.5):** qortium-chat renders our JSON as raw text today; add the machine-message skip rule (`app` field + no string `message`) to qortium-chat before/alongside public go-live.
-2. **TBD-2 → resolved (§6.1):** the `Chess` group is created by the same account that owns the `Chess` QDN name.
+2. **TBD-2 → resolved (§6.1):** the `Chess` group is owned by the publishing account; created 2026-07-20 as **groupId 14** (open, threshold NONE).
 3. **TBD-3 → resolved (§6.2):** archive service = `GAME` (1500); `JSON`'s 25 KB cap is too tight.
 4. **TBD-4 → resolved (§6.2):** mid-game saves in MVP; same-match saves update in place via the `chess-game-<gameId>` identifier; save-management UI later.
 5. **Auto-draw → accepted** where appropriate (§4.4 stands).

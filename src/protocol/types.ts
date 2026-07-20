@@ -10,6 +10,9 @@ export const PROTO_VERSION = '1.0';
 export const APP_MARKER = 'chess';
 export const MAX_ENVELOPE_BYTES = 3800; // headroom under the 4000-byte CHAT limit
 
+/** The public Chess lobby group on Previewnet (created 2026-07-20, open membership). */
+export const CHESS_GROUP_ID = 14;
+
 export type RulesetId = 'classic';
 
 export type GameResult = '1-0' | '0-1' | '1/2-1/2';
