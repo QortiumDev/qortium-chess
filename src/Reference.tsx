@@ -23,9 +23,6 @@ import {
 import {
   ABORT_MAX_HISTORY_LENGTH,
   APP_MARKER,
-  ARCHIVE_IDENTIFIER_PREFIX,
-  ARCHIVE_SERVICE,
-  ARCHIVE_SERVICE_ID,
   AUTO_DRAW_REASONS,
   CHESS_GROUP_ID,
   COLOR_CHOICES,
@@ -227,26 +224,6 @@ const accepted = stateHash === message.stateHash
 // gameId is the same primitive, truncated:
 //   blake2b-256(creatorAddress + nonce) sliced to ${GAME_ID_HEX_LENGTH} hex characters.`,
 
-  archiveLookup: `// Durable game archives on QDN. Identifier family: ${ARCHIVE_IDENTIFIER_PREFIX}<gameId>
-// Service: ${ARCHIVE_SERVICE} (${ARCHIVE_SERVICE_ID}). Owner: the publishing QDN name.
-const results = await qdnRequest({
-  action: 'SEARCH_QDN_RESOURCES',
-  service: '${ARCHIVE_SERVICE}',
-  identifier: '${ARCHIVE_IDENTIFIER_PREFIX}',
-  prefix: true,
-  includeMetadata: true,
-  limit: 20,
-});
-
-// Search results are discovery metadata, not authority. Fetch the payload and
-// re-verify it by replaying the history and re-deriving the hash chain.
-const archive = await qdnRequest({
-  action: 'FETCH_QDN_RESOURCE',
-  service: '${ARCHIVE_SERVICE}',
-  name: 'Alice',
-  identifier: '${ARCHIVE_IDENTIFIER_PREFIX}${EXAMPLE_GAME_ID}',
-});`,
-
   deepLink: `// Canonical route for this workspace. 'developer' and 'reference' are
 // accepted on read and re-serialized as 'developers'.
 qdn://APP/Chess/Chess?${VIEW_QUERY_PARAM}=developers
@@ -371,7 +348,6 @@ const TOC = [
   { id: 'reference-hash', label: 'Hash chain and move encoding' },
   { id: 'reference-validation', label: 'Validation and compatibility' },
   { id: 'reference-transport', label: 'Transport and discovery' },
-  { id: 'reference-archives', label: 'QDN archives' },
   { id: 'reference-lifecycle', label: 'Authority, lifecycle, and state' },
   { id: 'reference-bridge', label: 'Home bridge and runtime modes' },
   { id: 'reference-limits', label: 'Limits and security' },
@@ -513,7 +489,7 @@ export function Reference() {
           disambiguation decoration, so it needs a page of normalization rules before it can be
           hashed, and it is chess-specific. UCI is already canonical — one string per move — and
           opaque enough that a future ruleset can define its own encoding under the same contract.
-          SAN is derived for display only; PGN appears only in archives.
+          SAN is derived for display only and is never part of the wire format or the hash.
         </p>
         <p>
           The state hash is <code>blake2b-256</code> over the canonical payload, rendered as{' '}
@@ -611,39 +587,12 @@ export function Reference() {
         <p className="reference-warning">
           <strong>Chat retention is finite.</strong> Chat retention is user-configurable; 24 hours
           is only the default, so treat the horizon as unknown-but-finite rather than as a fixed
-          24-hour clock. A game that is not archived to QDN disappears from live view once its
-          messages age out; the archive is the only durable copy.
+          24-hour clock. Once a game&apos;s messages age out of the group it disappears from live
+          view, and this build offers no durability layer that outlives them: there is no publish
+          path, no fetch path, and no persistence contract for a finished game. Treat every game as
+          readable only for as long as its chat messages survive.
         </p>
         <CopyableCode id="discovery" label="Discover games in the group" />
-      </Section>
-
-      <Section id="reference-archives" title="QDN archives">
-        <p>
-          A finished — or mid-game saved — match is published as a QDN resource. The full tuple is
-          service <code>{ARCHIVE_SERVICE}</code> ({ARCHIVE_SERVICE_ID}), name = the publishing QDN
-          name, identifier <code>{ARCHIVE_IDENTIFIER_PREFIX}&lt;gameId&gt;</code> — for example{' '}
-          <code>{`${ARCHIVE_IDENTIFIER_PREFIX}${EXAMPLE_GAME_ID}`}</code>. The identifier is{' '}
-          {ARCHIVE_IDENTIFIER_PREFIX.length + GAME_ID_HEX_LENGTH} characters: the fixed prefix plus
-          the {GAME_ID_HEX_LENGTH}-character gameId.
-        </p>
-        <p>
-          Because the identifier is derived from the gameId, re-publishing the same match updates
-          in place, and each match a player saves occupies its own identifier. Both players may
-          publish independently; two archives that agree on the final state hash are effectively
-          co-signed, since each QDN publish is signed by its name owner.
-        </p>
-        <p>
-          <code>{ARCHIVE_SERVICE}</code> is not JSON-validated by Core, so archive integrity is
-          entirely a client responsibility: replay the history through the ruleset and re-derive
-          the hash chain before trusting a result. Search results are discovery metadata; the
-          fetched payload is the data.
-        </p>
-        <p className="reference-warning">
-          <strong>Not yet implemented.</strong> The archive publish and fetch path is specified
-          here but is not present in this build. Treat this section as the contract a client must
-          implement, not as behaviour to observe today.
-        </p>
-        <CopyableCode id="archiveLookup" label="Search and fetch a game archive" />
       </Section>
 
       <Section id="reference-lifecycle" title="Authority, lifecycle, and state">
@@ -666,7 +615,6 @@ export function Reference() {
               <tr><th scope="row">Cancel, approve, reject</th><td>The creator only.</td></tr>
               <tr><th scope="row">Move, resign, abort, draw messages</th><td>The two bound players only.</td></tr>
               <tr><th scope="row">Chat</th><td>Anyone, including spectators, on a public game.</td></tr>
-              <tr><th scope="row">Publish an archive</th><td>Any QDN name holder; verification is on the reader.</td></tr>
             </tbody>
           </table>
         </div>
@@ -699,11 +647,12 @@ export function Reference() {
         </p>
         <p className="reference-warning">
           <strong>Game history is public and durable.</strong> Every move, chat line, address, and
-          result in the public group is written to the chain in plain text, readable by anyone,
-          and archives published to QDN are permanent. Nothing here is private, and nothing here
-          can be edited or erased after the fact — deleting a local copy removes nothing from the
-          network. Do not put anything in a <code>note</code> or a <code>chat</code> message that
-          you would not publish permanently under your own name.
+          result in the public group is written to the chain in plain text and is readable by
+          anyone. Nothing here is private, and nothing here can be edited or erased after the fact
+          — deleting a local copy removes nothing from the network, and finite chat retention is a
+          storage horizon rather than a privacy control. Do not put anything in a <code>note</code>{' '}
+          or a <code>chat</code> message that you would not publish permanently under your own
+          name.
         </p>
       </Section>
 

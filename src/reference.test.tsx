@@ -18,9 +18,6 @@ import {
 import {
   ABORT_MAX_HISTORY_LENGTH,
   APP_MARKER,
-  ARCHIVE_IDENTIFIER_PREFIX,
-  ARCHIVE_SERVICE,
-  ARCHIVE_SERVICE_ID,
   AUTO_DRAW_REASONS,
   CHESS_GROUP_ID,
   COLOR_CHOICES,
@@ -154,14 +151,23 @@ describe('Reference — resource identity and discovery', () => {
     expect(html).toContain(String(DEFAULT_CHAT_POLL_INTERVAL_MS));
   });
 
-  it('renders the QDN archive tuple and identifier family', () => {
+  // The archive layer of spec §6.2 has no implementation — no publish path, no
+  // fetch path, no format. Documenting it here would publish a contract nothing
+  // can drift against, so the page must claim no durability layer at all until
+  // the module ships. This guard is what stops the section reappearing first.
+  it('claims no archive or durability contract anywhere on the page', () => {
+    const everything = [render(), ...Object.values(REFERENCE_SNIPPETS)].join('\n');
+
+    expect(everything).not.toContain('chess-game-');
+    expect(everything).not.toMatch(/\bGAME\b/);
+    expect(everything).not.toMatch(/archiv/i);
+  });
+
+  it('states plainly that a game survives only as long as its chat messages', () => {
     const html = render();
 
-    expect(html).toContain(ARCHIVE_SERVICE);
-    expect(html).toContain(String(ARCHIVE_SERVICE_ID));
-    expect(html).toContain(escapeHtml(`${ARCHIVE_IDENTIFIER_PREFIX}<gameId>`));
-    expect(html).toContain('Search results are discovery metadata');
-    expect(html).toContain('Not yet implemented');
+    expect(html).toContain('Chat retention is finite');
+    expect(html).toContain('no durability layer that outlives them');
   });
 });
 
@@ -335,7 +341,6 @@ describe('Reference — exported snippet inventory', () => {
       'validateEnvelope',
       'submitMove',
       'verifyStateHash',
-      'archiveLookup',
       'deepLink',
     ]);
   });
@@ -404,12 +409,7 @@ describe('Reference — exported snippet inventory', () => {
     expect(snippet).toContain('white:');
   });
 
-  it('pins the archive tuple and the canonical developers route', () => {
-    expect(REFERENCE_SNIPPETS.archiveLookup).toContain(`service: '${ARCHIVE_SERVICE}'`);
-    expect(REFERENCE_SNIPPETS.archiveLookup).toContain(ARCHIVE_IDENTIFIER_PREFIX);
-    expect(REFERENCE_SNIPPETS.archiveLookup).toContain('SEARCH_QDN_RESOURCES');
-    expect(REFERENCE_SNIPPETS.archiveLookup).toContain('FETCH_QDN_RESOURCE');
-
+  it('pins the canonical developers route', () => {
     expect(REFERENCE_SNIPPETS.deepLink).toContain('?view=developers');
     expect(REFERENCE_SNIPPETS.deepLink).toContain('?view=game&gameId=');
   });

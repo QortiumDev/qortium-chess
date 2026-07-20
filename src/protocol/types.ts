@@ -16,19 +16,10 @@ export const MAX_ENVELOPE_BYTES = 3800; // headroom under the 4000-byte CHAT lim
 /** The public Chess lobby group on Previewnet (created 2026-07-20, open membership). */
 export const CHESS_GROUP_ID = 14;
 
-/**
- * QDN archive contract (spec §6.2). The archive transport is not implemented
- * yet; these are the published identifier/service names it must use, and the
- * Developers reference renders them from here rather than from prose.
- */
-export const ARCHIVE_SERVICE = 'GAME';
-export const ARCHIVE_SERVICE_ID = 1500;
-export const ARCHIVE_IDENTIFIER_PREFIX = 'chess-game-';
-
-/** `chess-game-<gameId>` — one archive per match, updated in place on re-save. */
-export function buildArchiveIdentifier(gameId: GameId): string {
-  return `${ARCHIVE_IDENTIFIER_PREFIX}${gameId}`;
-}
+// The QDN archive contract lives in docs/QCH1-SPEC-DRAFT.md §6.2 and is marked
+// DESIGNED, NOT IMPLEMENTED. Deliberately no constants for it here: this module
+// is the live contract the Developers reference renders from, so a name that no
+// code path uses would document a guarantee nothing can drift against.
 
 /** Hex lengths, in characters, of the protocol's identifier forms. */
 export const GAME_ID_HEX_LENGTH = 32;

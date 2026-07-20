@@ -1,4 +1,9 @@
 // Portuguese (pt) translations for Qortium Chess.
+//
+// Brazilian Portuguese (pt-BR), matching the rest of the Qortium fleet: gerund
+// progressives ('Conectando…') rather than the European "a + infinitive" form,
+// second person with 'você' rather than the European familiar, and Brazilian
+// vocabulary ('aplicativo', 'acessar', 'solicitação', 'desenvolvedores').
 import type { EN_STRINGS } from './en';
 
 const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
@@ -6,16 +11,16 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
 
   'nav.lobby': 'Sala',
   'nav.localBoard': 'Tabuleiro local',
-  'nav.developers': 'Programadores',
+  'nav.developers': 'Desenvolvedores',
 
-  'status.connecting': 'A ligar…',
-  'status.playingAs': 'A jogar como {name}',
+  'status.connecting': 'Conectando…',
+  'status.playingAs': 'Jogando como {name}',
   'status.spectator': 'Espectador (sem conta)',
   'status.unavailable': 'Sala indisponível — apenas jogo local',
   'status.noNode': 'sem nó',
-  'notice.lobbyUnreachable': 'Não foi possível aceder à sala de Xadrez ({reason}). O tabuleiro local continua a funcionar.',
+  'notice.lobbyUnreachable': 'Não foi possível acessar a sala de Xadrez ({reason}). O tabuleiro local continua funcionando.',
 
-  'label.you': 'Tu',
+  'label.you': 'Você',
   'color.white': 'Brancas',
   'color.black': 'Pretas',
   'color.random': 'Aleatório',
@@ -25,46 +30,46 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.withPly': '{summary} — meio-lance {count}',
   'game.withResult': '{summary} — {result} ({reason})',
 
-  'lobby.spectatorNotice': 'Modo espectador — abre esta aplicação no Qortium Home com uma conta para jogar.',
-  'lobby.joinGroupNotice': 'Entra no grupo da sala de Xadrez para criar convites e jogar.',
+  'lobby.spectatorNotice': 'Modo espectador — abra este aplicativo no Qortium Home com uma conta para jogar.',
+  'lobby.joinGroupNotice': 'Entre no grupo da sala de Xadrez para criar convites e jogar.',
   'lobby.joinGroupAction': 'Entrar no grupo da sala',
-  'lobby.joinGroupHint': '(a confirmação demora um bloco)',
+  'lobby.joinGroupHint': '(a confirmação leva um bloco)',
   'lobby.createInvite': 'Criar convite',
-  'lobby.openInviteExists': 'Já tens um convite aberto ({id}).',
+  'lobby.openInviteExists': 'Você já tem um convite aberto ({id}).',
   'lobby.cancelInvite': 'Cancelar',
-  'lobby.yourColor': 'A tua cor',
+  'lobby.yourColor': 'Sua cor',
   'lobby.notePlaceholder': 'Nota (opcional)',
   'lobby.postInvite': 'Publicar convite',
   'lobby.openInvites': 'Convites abertos',
-  'lobby.noOpenInvites': 'Sem convites abertos. Publica um!',
+  'lobby.noOpenInvites': 'Sem convites abertos. Publique um!',
   'lobby.join': 'Entrar',
-  'lobby.joinRequestsWaiting': 'pedidos de entrada em espera — abre o jogo',
-  'lobby.yourGames': 'Os teus jogos',
+  'lobby.joinRequestsWaiting': 'solicitações de entrada aguardando — abra o jogo',
+  'lobby.yourGames': 'Seus jogos',
   'lobby.watch': 'Assistir',
-  'lobby.noGamesInProgress': 'Nenhum jogo em curso.',
+  'lobby.noGamesInProgress': 'Nenhum jogo em andamento.',
   'lobby.recentlyFinished': 'Terminados recentemente',
 
   'game.backToLobby': '← Sala',
   'game.over': 'Jogo terminado: {result} ({reason})',
-  'game.aborted': 'Jogo anulado.',
+  'game.aborted': 'Jogo abortado.',
   'game.inviteCanceled': 'Convite cancelado.',
-  'game.waitingOpponent': 'À espera de um adversário…',
-  'game.approvePrompt': 'Aprova um pedido de entrada para começar o jogo.',
-  'game.waitingApproval': 'À espera da aprovação do criador…',
-  'game.yourMove': 'É a tua vez.',
-  'game.joinRequests': 'Pedidos de entrada',
+  'game.waitingOpponent': 'Aguardando um adversário…',
+  'game.approvePrompt': 'Aprove uma solicitação de entrada para começar o jogo.',
+  'game.waitingApproval': 'Aguardando a aprovação do criador…',
+  'game.yourMove': 'É a sua vez.',
+  'game.joinRequests': 'Solicitações de entrada',
   'game.approve': 'Aprovar',
-  'game.reject': 'Recusar',
+  'game.reject': 'Rejeitar',
   'game.acceptDraw': 'Aceitar empate',
   'game.declineDraw': 'Recusar empate',
   'game.drawOffered': 'Empate proposto…',
   'game.offerDraw': 'Propor empate',
   'game.resign': 'Desistir',
-  'game.abort': 'Anular',
+  'game.abort': 'Abortar',
   'game.chat': 'Conversa',
-  'game.chatPlaceholder': 'Diz alguma coisa…',
+  'game.chatPlaceholder': 'Diga alguma coisa…',
   'game.send': 'Enviar',
-  'game.rejectedMessages': 'Mensagens recusadas',
+  'game.rejectedMessages': 'Mensagens rejeitadas',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'rei branco',
@@ -106,16 +111,16 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'announce.illegalTarget': '{square} não é um destino legal.',
 
   'local.newGame': 'Novo jogo',
-  'local.undo': 'Anular jogada',
+  'local.undo': 'Desfazer jogada',
 
   'terminal.checkmate': 'xeque-mate',
-  'terminal.stalemate': 'empate afogado',
+  'terminal.stalemate': 'afogamento',
   'terminal.insufficientMaterial': 'material insuficiente',
   'terminal.fiftyMove': 'regra dos 50 lances',
   'terminal.threefoldRepetition': 'tripla repetição',
   'terminal.drawAgreed': 'empate acordado',
   'terminal.resign': 'desistência',
-  'terminal.abort': 'anulado',
+  'terminal.abort': 'abortado',
 };
 
 export default MESSAGES;
