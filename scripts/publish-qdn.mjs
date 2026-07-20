@@ -27,9 +27,16 @@ const identifier = readEnv('QDN_IDENTIFIER') ?? DEFAULT_IDENTIFIER;
 const publishTitle = readEnv('QDN_TITLE') ?? DEFAULT_TITLE;
 const service = readEnv('QDN_SERVICE') ?? 'APP';
 const distPath = path.resolve(repoRoot, readEnv('DIST_PATH') ?? 'dist');
-const apiKeyPath = expandHomePath(readEnv('NODE_API_KEY_PATH') ?? '~/git/qortium/preview/apikey.txt');
+// These default to the RUNNING node's key, not a checked-out copy — a stale key
+// fails as an opaque 401 at publish time. Paths match qortium-chat's script;
+// the old `~/git/qortium/preview/...` defaults predate the workspace reorg and
+// pointed at a directory that no longer exists.
+const apiKeyPath = expandHomePath(
+  readEnv('NODE_API_KEY_PATH') ?? '~/.config/qortium-core/runtime/apikey.txt',
+);
 const previewAccountsPath = expandHomePath(
-  readEnv('PREVIEW_ACCOUNTS_PATH') ?? '~/git/qortium/preview/secrets/initial-minting-accounts.json',
+  readEnv('PREVIEW_ACCOUNTS_PATH') ??
+    '~/qortium/git/qortium-core/preview/secrets/initial-minting-accounts.json',
 );
 
 function expandHomePath(filePath) {
