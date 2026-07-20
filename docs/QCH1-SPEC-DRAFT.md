@@ -93,7 +93,9 @@ Own compact JSON, **no Q-Chat coupling** (QC1's `version:3` / ProseMirror / `spe
 {"app":"chess","qch1":{ ...message... }}
 ```
 
-Sent as the CHAT message data. **TBD-1:** the convention for machine-only chat messages on Qortium — what qortium-chat renders vs skips — needs to be checked against qortium-chat's parser and, if necessary, agreed as a platform convention (e.g. skip messages whose payload parses to JSON with a registered `app` key). Human `chat` messages are ordinary text so generic clients show them.
+Sent as the `message` string of `SEND_CHAT_MESSAGE` (Home stores it as base58 UTF-8 in the tx `data`; 4000-byte cap enforced in `platform.ts`).
+
+**Resolved (was TBD-1), verified against qortium-chat 2026-07-20:** qortium-chat's `unwrapChatTextEnvelope` (`src/chatText.ts`) only recognizes JSON objects carrying a string `message` field; anything else — including our envelope — falls through and is **rendered verbatim as raw JSON text**. There is no machine-message skip convention today. Therefore qortium-chat gets a small companion rule before/alongside chess going live in a shared group: *hide messages that decode to a JSON object with a string `app` field and no string `message` field* (registered machine messages). QCH1 envelopes are shaped to satisfy exactly that rule. Human `chat` messages are sent as ordinary text so all clients show them.
 
 ## 5. Validation (receive gates, per `move`)
 
@@ -107,12 +109,12 @@ Inherited from QC1 Part I, adapter-backed: (1) envelope shape + schema; (2) sign
 - **Bridge actions used (all exist in Home today):** `SEND_CHAT_MESSAGE`, `SEARCH_CHAT_MESSAGES`, private-chat search/key actions, `GET_HOST_INFO`, `JOIN_GROUP`, QDN publish/fetch/search (§6.2). Live updates via node websocket `/websockets/chat/messages` (pattern proven in qortium-chat) with search-polling fallback.
 - Expiry: chat retention is node-configurable, default 24 h. UI shows the QC1-style "expires in ~HH:MM" from the latest valid message. An in-progress game older than retention is simply gone from live view — but see 6.2.
 
-### 6.2 Durability — QDN archives (MVP)
-On terminal state, either/both players (spectators optionally) publish a **game archive**:
-- Identifier: `chess-game-<gameId>`; service/format: JSON document (boards-pattern publish; exact service TBD-3).
+### 6.2 Durability — QDN archives & saves (MVP)
+On terminal state — **and at any earlier point, as a "save"** — either/both players (spectators optionally) publish a **game archive**:
+- Identifier: `chess-game-<gameId>`; service: **`GAME` (1500)** — resolved (was TBD-3) from Core's `Service.java`: `JSON` (1110) validates content but caps at 25 KB single-file, which long archives with embedded envelopes can exceed; `GAME` is purpose-named, size-unlimited, multi-file capable. Trade-offs accepted: no Core-side JSON validation (clients validate) and no private variant (archives are public; private-game players who want secrecy simply don't publish).
 - Content: `{meta:{players,ruleset,result,reason,dates}, history:[uci], pgn, finalStateHash, envelopes:[...full protocol messages...], txSignatures?:[...chat tx signatures where retrievable...]}`.
 - Any client can re-validate an archive offline by replaying history through the adapter and re-deriving the hash chain. Archives from both players that agree on `finalStateHash` make the result effectively co-signed (each QDN publish is signed by its name owner). Ratings, profiles, and history views (§10.3) all read archives via `SEARCH_QDN_RESOURCES`.
-- **Mid-game checkpoints** (optional, post-MVP): a player may publish the same format with `terminal:null` to survive chat expiry of long games; resuming = re-posting from checkpoint history. TBD-4.
+- **Mid-game saves — in MVP (resolved, was TBD-4):** a player may publish the same format with `terminal:null` at any time ("save game"). Because the identifier is `chess-game-<gameId>`, re-saving the same match **updates in place** (same name+service+identifier = QDN update); different matches get distinct identifiers, so a player naturally accumulates one save per game. Save management UI (list/delete old saves) is a later addition. Resuming = re-validating the save and continuing the hash chain from its history.
 
 ### 6.3 Later — MESSAGE-tx correspondence & AT wagers (designed-for, not MVP)
 - Correspondence mode: same envelope, one move per on-chain MESSAGE tx (4000 B, fee-less via mempow nonce). Blocked on send capability for apps: no `SEND_MESSAGE` bridge action exists in Home today; needs either a new bridge action (ship app-half first, per host/app protocol ordering) or client-side build/sign via `FETCH_NODE_API`.
@@ -144,12 +146,16 @@ QC1's state machine, kept: `Pending —join→ AwaitingApproval —approve→ Ac
 4. **J-Chess ruleset** — `rulesetId:"jchess"` behind the same adapter; engine work per audit §"cost sketch" plus a canonical action-string encoding; protocol needs zero structural change (that's why moves are opaque strings).
 5. **FIDE-style draw claims** — `claimDraw` message if auto-draw proves unpopular.
 
-## 11. Open questions for QuickMythril
+## 11. Decision log (formerly open questions)
 
-1. **TBD-1** Machine-message convention: is a JSON `{"app":...}` payload already skipped by qortium-chat, or do we add that rule to qortium-chat first?
-2. **TBD-2** Public lobby group: create as `Chess` on Previewnet under which account? Open or approval-gated membership?
-3. **TBD-3** QDN archive service type: plain JSON under an existing service vs. a dedicated service name — preference?
-4. **TBD-4** Are mid-game QDN checkpoints wanted in MVP, or is "games must finish within chat retention" acceptable initially?
-5. Auto-draw simplification (§4.4) acceptable, or FIDE claim semantics from day one?
-6. Spectator game-chat on public games: allowed from MVP (QC1 said yes, with per-user local ignore) — still the call?
-7. First-release version: confirm 1.4.0 under QAVS at time of first publish.
+All original open questions were answered by QuickMythril on 2026-07-20; decisions folded into the sections above:
+
+1. **TBD-1 → resolved (§4.5):** qortium-chat renders our JSON as raw text today; add the machine-message skip rule (`app` field + no string `message`) to qortium-chat before/alongside public go-live.
+2. **TBD-2 → resolved (§6.1):** the `Chess` group is created by the same account that owns the `Chess` QDN name.
+3. **TBD-3 → resolved (§6.2):** archive service = `GAME` (1500); `JSON`'s 25 KB cap is too tight.
+4. **TBD-4 → resolved (§6.2):** mid-game saves in MVP; same-match saves update in place via the `chess-game-<gameId>` identifier; save-management UI later.
+5. **Auto-draw → accepted** where appropriate (§4.4 stands).
+6. **Spectator chat → allowed** from MVP with per-user local ignore (chat is public anyway).
+7. **First release = 1.4.0** under QAVS (matters only once new Home/Core capabilities are used).
+
+Remaining flagged item: §7 color-resolution fallback (approve-tx signature availability at approve time) — verify during transport implementation.

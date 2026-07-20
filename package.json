@@ -1,0 +1,30 @@
+{
+  "name": "qortium-chess",
+  "version": "1.4.0",
+  "private": true,
+  "license": "0BSD",
+  "description": "A QDN app for Qortium: Chess.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "qdn:publish": "node scripts/publish-qdn.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "chess.js": "^1.4.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "vitest": "^4.1.8"
+  }
+}
