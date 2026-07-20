@@ -5,6 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="./favicon.ico" sizes="any" />
     <title>Chess</title>
+    <!-- fouc-1: stamp the display settings onto <html> BEFORE the stylesheet
+         paints. This script is inline, synchronous and placed above everything
+         Vite injects (Vite appends its module <script> and its CSS <link> to
+         the end of <head>, so this always executes first — verify in the built
+         dist/index.html, not just here). src/main.tsx's applyDisplaySettings()
+         cannot do this job: it ships in a deferred module, so the browser had
+         already painted ~140ms of Classic-light defaults before it ran.
+
+         DUPLICATED LOGIC — INTENTIONAL. This is a hand-inlined slice of
+         src/displaySettings.ts (param names, ?-vs-window precedence,
+         normalization, defaults, attribute names). See the fouc-1 comment
+         there for the full rationale. The two copies are pinned together by
+         src/bootTheme.test.ts, which runs THIS script and diffs its output
+         against the module's. Edit both sides together. -->
+    <script>
+      (function (w, d) {
+        var q = new URLSearchParams((w.location && w.location.search) || '');
+        // `??` chain: first value that is present at all, valid or not.
+        function first() {
+          for (var i = 0; i < arguments.length; i += 1) {
+            if (arguments[i] !== null && arguments[i] !== undefined) return arguments[i];
+          }
+          return null;
+        }
+        function norm(v, allowed) {
+          if (typeof v !== 'string') return null;
+          var n = v.trim().toLowerCase();
+          return allowed.indexOf(n) >= 0 ? n : null;
+        }
+        var theme = norm(first(q.get('theme'), w._qdnTheme), ['dark', 'light']) || 'light';
+        var accent =
+          norm(first(q.get('accent'), w._qdnAccent), [
+            'green',
+            'blue',
+            'orange',
+            'purple',
+            'red',
+            'teal',
+            'cyan',
+            'pink',
+            'yellow',
+          ]) || 'green';
+        var sizes = ['extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'];
+        // Note the shape difference from the others, mirrored from the module:
+        // an invalid ?textSize DOES fall through to the host global.
+        var textSize =
+          norm(first(q.get('textSize'), q.get('text-size')), sizes) || norm(w._qdnTextSize, sizes) || 'medium';
+        var ui =
+          norm(first(q.get('uiStyle'), q.get('ui-style'), w._qdnUiStyle, w._qdnUIStyle), [
+            'classic',
+            'modern',
+            'fun',
+          ]) || 'classic';
+        var r = d.documentElement;
+        r.setAttribute('data-theme', theme);
+        r.setAttribute('data-accent', accent);
+        r.setAttribute('data-text-size', textSize);
+        r.setAttribute('data-ui', ui);
+        r.style.colorScheme = theme;
+      })(window, document);
+    </script>
   </head>
   <body>
     <div id="root"></div>

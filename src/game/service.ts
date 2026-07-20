@@ -9,6 +9,7 @@ import {
   encodeEnvelope,
 } from '../protocol/envelope';
 import { blake2b256Hex, deriveGameId, initialStateHash, stateHash } from '../protocol/hash';
+import { ABORT_MAX_HISTORY_LENGTH } from '../protocol/types';
 import type {
   Address,
   ColorChoice,
@@ -25,7 +26,19 @@ import type { ClassicState } from '../rules/classic';
 import type { RulesAdapter } from '../rules/adapter';
 import type { ChatTransport, IncomingChat, Route } from '../transport/types';
 
-export type GamePhase = 'pending' | 'awaitingApproval' | 'active' | 'terminal' | 'canceled' | 'aborted';
+export const GAME_PHASES = [
+  'pending',
+  'awaitingApproval',
+  'active',
+  'terminal',
+  'canceled',
+  'aborted',
+] as const;
+
+export type GamePhase = (typeof GAME_PHASES)[number];
+
+/** Phases from which no further protocol message is accepted. */
+export const TERMINAL_GAME_PHASES = ['terminal', 'canceled', 'aborted'] as const;
 
 export type GameEvent = {
   message: Qch1Message;
@@ -115,6 +128,10 @@ export class GameService {
     this.seenSignatures.add(incoming.signature);
     this.lastFetched = Math.max(this.lastFetched, incoming.timestamp);
 
+    // Gates 0 and 1 run inside the decoder: the size budget
+    // (`invalid.oversized`) and the version gate (`invalid.versionUnsupported`
+    // for a foreign major; a newer same-major minor is accepted and its
+    // unknown fields ignored). Their verdicts surface here like any other.
     const decoded = decodeEnvelope(incoming.data);
     if (!decoded.ok) {
       return decoded.reason === 'not-qch1' ? null : (decoded.verdict ?? bad('invalid.schema'));
@@ -267,7 +284,7 @@ export class GameService {
       case 'abort': {
         const gate = this.requireActivePlayer(game, message.from);
         if (gate) return gate;
-        if (game.history.length >= 2) return bad('invalid.abortWindowClosed');
+        if (game.history.length >= ABORT_MAX_HISTORY_LENGTH) return bad('invalid.abortWindowClosed');
         if (message.prevHash !== game.lastStateHash) return bad('invalid.historyMismatch');
         game.phase = 'aborted';
         game.drawOffer = null;

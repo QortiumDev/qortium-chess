@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildEnvelope, encodeEnvelope } from '../protocol/envelope';
+import { stateHash } from '../protocol/hash';
+import { MAX_ENVELOPE_BYTES } from '../protocol/types';
+import type { Qch1Message, Qch1Move } from '../protocol/types';
 import { classicRules } from '../rules/classic';
 import { MemoryHub } from '../transport/memory';
 import type { Route } from '../transport/types';
@@ -181,6 +184,87 @@ describe('GameService lifecycle', () => {
     });
     expect(verdict).toMatchObject({ accepted: false, badge: 'invalid.duplicatedMessage' });
     expect(alice.game(gameId)!.phase).toBe('active');
+  });
+
+  it('accepts a move from a newer same-major minor and ignores its unknown fields', async () => {
+    const { alice, bob, gameId } = await setupActiveGame(hub);
+    await alice.move(gameId, 'e2e4');
+    const game = bob.game(gameId)!;
+    const history = [...game.history, 'e7e5'];
+    hub.deliver(
+      encodeEnvelope(
+        buildEnvelope({
+          protoTag: 'QCH1',
+          protoVersion: '1.1', // a minor this build does not implement
+          type: 'move',
+          gameId,
+          from: BOB,
+          ply: 2,
+          move: 'e7e5',
+          history,
+          prevHash: game.lastStateHash,
+          stateHash: stateHash({
+            ruleset: 'classic',
+            gameId,
+            players: game.players!,
+            history,
+            terminal: null,
+          }),
+          clockMs: 90_000, // a 1.1 field this build knows nothing about
+        } as unknown as Qch1Move),
+      ),
+      BOB,
+      ROUTE,
+    );
+    const seen = alice.game(gameId)!;
+    expect(seen.history).toEqual(['e2e4', 'e7e5']);
+    expect(seen.events[seen.events.length - 1].verdict).toEqual({ accepted: true });
+  });
+
+  it('refuses a message from a different protocol major', async () => {
+    const { alice, gameId } = await setupActiveGame(hub);
+    const verdict = alice.ingest({
+      data: encodeEnvelope(
+        buildEnvelope({
+          protoTag: 'QCH1',
+          protoVersion: '2.0',
+          type: 'resign',
+          gameId,
+          from: BOB,
+          prevHash: alice.game(gameId)!.lastStateHash,
+        } as unknown as Qch1Message),
+      ),
+      signer: BOB,
+      signature: 'sig-future-major',
+      timestamp: 1_000_000,
+      route: ROUTE,
+    });
+    expect(verdict).toMatchObject({ accepted: false, badge: 'invalid.versionUnsupported' });
+    expect(alice.game(gameId)!.phase).toBe('active');
+    expect(alice.game(gameId)!.terminal).toBeNull();
+  });
+
+  it('refuses an over-budget envelope with invalid.oversized', async () => {
+    const { alice, gameId } = await setupActiveGame(hub);
+    const verdict = alice.ingest({
+      data: JSON.stringify({
+        app: 'chess',
+        qch1: {
+          protoTag: 'QCH1',
+          protoVersion: '1.0',
+          type: 'chat',
+          gameId,
+          from: BOB,
+          text: 'hi',
+          pad: 'x'.repeat(MAX_ENVELOPE_BYTES),
+        },
+      }),
+      signer: BOB,
+      signature: 'sig-oversized',
+      timestamp: 1_000_001,
+      route: ROUTE,
+    });
+    expect(verdict).toMatchObject({ accepted: false, badge: 'invalid.oversized' });
   });
 
   it('rejects an invite whose gameId does not derive from creator+nonce', async () => {

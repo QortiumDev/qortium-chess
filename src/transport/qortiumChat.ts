@@ -7,6 +7,23 @@ import type { ChatTransport, IncomingChat, Route } from './types';
 
 export type BridgeRequest = (request: Record<string, unknown>) => Promise<unknown>;
 
+/** Home bridge actions this transport issues, in the order it prefers them. */
+export const CHAT_SEND_ACTION = 'SEND_CHAT_MESSAGE';
+export const CHAT_SEARCH_ACTION = 'SEARCH_CHAT_MESSAGES';
+export const NODE_API_ACTION = 'FETCH_NODE_API';
+
+/** Node API read paths used when the bridge search action is unavailable. */
+export const CHAT_MESSAGES_NODE_PATH = '/chat/messages';
+export const CHAT_WEBSOCKET_PATH = '/websockets/chat/messages';
+
+/** Chat payloads are read as BASE64 and decoded as UTF-8. */
+export const CHAT_MESSAGE_ENCODING = 'BASE64';
+
+export const DEFAULT_CHAT_FETCH_LIMIT = 100;
+export const DEFAULT_CHAT_POLL_INTERVAL_MS = 15_000;
+export const CHAT_WEBSOCKET_BACKLOG_LIMIT = 50;
+export const CHAT_WEBSOCKET_RECONNECT_MS = 5_000;
+
 export type RawChatMessage = {
   data?: string | null;
   encoding?: 'BASE58' | 'BASE64';
@@ -52,7 +69,7 @@ export function mapRawChatMessage(raw: RawChatMessage, route: Route): IncomingCh
   if (raw.isEncrypted || raw.isText === false || !raw.data || !raw.signature) {
     return null;
   }
-  if (raw.encoding && raw.encoding !== 'BASE64') {
+  if (raw.encoding && raw.encoding !== CHAT_MESSAGE_ENCODING) {
     return null;
   }
   let data: string;
@@ -75,8 +92,8 @@ export class QortiumChatTransport implements ChatTransport {
     this.request = options.request;
     this.webSocketUrlBase = options.webSocketUrlBase;
     this.createWebSocket = options.createWebSocket;
-    this.fetchLimit = options.fetchLimit ?? 100;
-    this.pollIntervalMs = options.pollIntervalMs ?? 15_000;
+    this.fetchLimit = options.fetchLimit ?? DEFAULT_CHAT_FETCH_LIMIT;
+    this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_CHAT_POLL_INTERVAL_MS;
   }
 
   async send(data: string, route: Route): Promise<{ signature: string }> {
@@ -84,7 +101,7 @@ export class QortiumChatTransport implements ChatTransport {
       throw new Error('Direct-message games are not implemented yet.');
     }
     const result = (await this.request({
-      action: 'SEND_CHAT_MESSAGE',
+      action: CHAT_SEND_ACTION,
       groupId: route.groupId,
       message: data,
     })) as { signature?: string } | null;
@@ -96,8 +113,8 @@ export class QortiumChatTransport implements ChatTransport {
     const after = typeof opts?.after === 'number' && opts.after > 0 ? opts.after : undefined;
     try {
       const raw = (await this.request({
-        action: 'SEARCH_CHAT_MESSAGES',
-        encoding: 'BASE64',
+        action: CHAT_SEARCH_ACTION,
+        encoding: CHAT_MESSAGE_ENCODING,
         groupId,
         limit,
         reverse: true,
@@ -112,7 +129,7 @@ export class QortiumChatTransport implements ChatTransport {
     }
     const query = new URLSearchParams({
       txGroupId: String(groupId),
-      encoding: 'BASE64',
+      encoding: CHAT_MESSAGE_ENCODING,
       limit: String(limit),
       reverse: 'true',
     });
@@ -120,9 +137,9 @@ export class QortiumChatTransport implements ChatTransport {
       query.set('after', String(after));
     }
     const result = (await this.request({
-      action: 'FETCH_NODE_API',
+      action: NODE_API_ACTION,
       method: 'GET',
-      path: `/chat/messages?${query.toString()}`,
+      path: `${CHAT_MESSAGES_NODE_PATH}?${query.toString()}`,
     })) as { data?: unknown } | null;
     return Array.isArray(result?.data) ? (result.data as RawChatMessage[]) : [];
   }
@@ -170,12 +187,14 @@ export class QortiumChatTransport implements ChatTransport {
       }
       const query = new URLSearchParams({
         txGroupId: String(route.groupId),
-        encoding: 'BASE64',
-        limit: '50',
+        encoding: CHAT_MESSAGE_ENCODING,
+        limit: String(CHAT_WEBSOCKET_BACKLOG_LIMIT),
         reverse: 'true',
       });
       try {
-        socket = this.createWebSocket(`${this.webSocketUrlBase}/websockets/chat/messages?${query.toString()}`);
+        socket = this.createWebSocket(
+          `${this.webSocketUrlBase}${CHAT_WEBSOCKET_PATH}?${query.toString()}`,
+        );
       } catch {
         socket = null;
         return;
@@ -193,7 +212,7 @@ export class QortiumChatTransport implements ChatTransport {
       socket.onclose = () => {
         socket = null;
         if (!closed) {
-          reconnectTimer = setTimeout(connect, 5_000);
+          reconnectTimer = setTimeout(connect, CHAT_WEBSOCKET_RECONNECT_MS);
         }
       };
     };

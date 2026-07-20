@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import type { TrackedGame } from '../game/service';
 import { joinChessGroup } from '../game/useChessService';
-import type { ColorChoice } from '../protocol/types';
+import type { MessageKey, TranslateFunction } from '../i18n';
+import type { ColorChoice, TerminalReason } from '../protocol/types';
 
 function shortId(gameId: string) {
   return gameId.slice(0, 8);
@@ -13,17 +14,51 @@ function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function describeGame(game: TrackedGame, me: string | null): string {
-  if (game.players) {
-    const white = game.players.white === me ? 'You' : shortAddress(game.players.white);
-    const black = game.players.black === me ? 'You' : shortAddress(game.players.black);
-    return `${white} vs ${black} — ${shortId(game.gameId)}`;
+const COLOR_KEYS: Record<ColorChoice, MessageKey> = {
+  White: 'color.white',
+  Black: 'color.black',
+  Random: 'color.random',
+};
+
+const TERMINAL_REASON_KEYS: Record<TerminalReason, MessageKey> = {
+  checkmate: 'terminal.checkmate',
+  stalemate: 'terminal.stalemate',
+  'insufficient-material': 'terminal.insufficientMaterial',
+  'fifty-move': 'terminal.fiftyMove',
+  'threefold-repetition': 'terminal.threefoldRepetition',
+  'draw-agreed': 'terminal.drawAgreed',
+  resign: 'terminal.resign',
+  abort: 'terminal.abort',
+};
+
+/** Localized end-of-game reason. Unknown wire values fall through verbatim so a
+ *  newer peer's reason code is still visible rather than being swallowed. */
+export function describeTerminalReason(reason: TerminalReason | undefined, t: TranslateFunction): string {
+  if (!reason) {
+    return '';
   }
-  const creator = game.creator === me ? 'You' : shortAddress(game.creator);
-  return `${creator}'s invite (${game.colorChoice}) — ${shortId(game.gameId)}`;
+
+  const key = TERMINAL_REASON_KEYS[reason];
+
+  return key ? t(key) : reason;
+}
+
+export function describeGame(game: TrackedGame, me: string | null, t: TranslateFunction): string {
+  if (game.players) {
+    const white = game.players.white === me ? t('label.you') : shortAddress(game.players.white);
+    const black = game.players.black === me ? t('label.you') : shortAddress(game.players.black);
+    return t('game.matchup', { white, black, id: shortId(game.gameId) });
+  }
+  const creator = game.creator === me ? t('label.you') : shortAddress(game.creator);
+  return t('game.inviteBy', {
+    creator,
+    color: t(COLOR_KEYS[game.colorChoice] ?? 'color.random'),
+    id: shortId(game.gameId),
+  });
 }
 
 export type LobbyProps = {
+  t: TranslateFunction;
   games: TrackedGame[];
   me: string | null;
   isGroupMember: boolean;
@@ -36,7 +71,7 @@ export type LobbyProps = {
 };
 
 export function Lobby(props: LobbyProps) {
-  const { games, me } = props;
+  const { games, me, t } = props;
   const [colorChoice, setColorChoice] = useState<ColorChoice>('Random');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -67,20 +102,18 @@ export function Lobby(props: LobbyProps) {
   return (
     <div className="lobby">
       {!props.canPlay ? (
-        <div className="notice">
-          Spectator mode — open this app inside Qortium Home with an account to play.
-        </div>
+        <div className="notice">{t('lobby.spectatorNotice')}</div>
       ) : !props.isGroupMember ? (
         <div className="notice">
-          Join the Chess lobby group to create invites and play.{' '}
+          {t('lobby.joinGroupNotice')}{' '}
           <button
             type="button"
             disabled={busy}
             onClick={() => run(async () => { await joinChessGroup(); props.onJoinedGroup(); })}
           >
-            Join lobby group
+            {t('lobby.joinGroupAction')}
           </button>
-          <span className="muted"> (takes a block to confirm)</span>
+          <span className="muted"> {t('lobby.joinGroupHint')}</span>
         </div>
       ) : null}
 
@@ -88,32 +121,34 @@ export function Lobby(props: LobbyProps) {
 
       {props.canPlay && props.isGroupMember ? (
         <section className="lobby-section">
-          <h2>Create invite</h2>
+          <h2>{t('lobby.createInvite')}</h2>
           {myOpenInvite ? (
             <p>
-              You already have an open invite ({shortId(myOpenInvite.gameId)}).{' '}
+              {t('lobby.openInviteExists', { id: shortId(myOpenInvite.gameId) })}{' '}
               <button type="button" disabled={busy} onClick={() => run(() => props.onCancelInvite(myOpenInvite.gameId))}>
-                Cancel it
+                {t('lobby.cancelInvite')}
               </button>
             </p>
           ) : (
             <div className="invite-form">
               <label>
-                Your color{' '}
+                {t('lobby.yourColor')}{' '}
+                {/* The option VALUES stay the protocol's `ColorChoice` tokens —
+                    only the visible labels are localized. */}
                 <select value={colorChoice} onChange={(e) => setColorChoice(e.target.value as ColorChoice)}>
-                  <option>Random</option>
-                  <option>White</option>
-                  <option>Black</option>
+                  <option value="Random">{t('color.random')}</option>
+                  <option value="White">{t('color.white')}</option>
+                  <option value="Black">{t('color.black')}</option>
                 </select>
               </label>
               <input
                 value={note}
                 maxLength={160}
-                placeholder="Note (optional)"
+                placeholder={t('lobby.notePlaceholder')}
                 onChange={(e) => setNote(e.target.value)}
               />
               <button type="button" disabled={busy} onClick={() => run(() => props.onCreateInvite(colorChoice, note))}>
-                Post invite
+                {t('lobby.postInvite')}
               </button>
             </div>
           )}
@@ -121,21 +156,21 @@ export function Lobby(props: LobbyProps) {
       ) : null}
 
       <section className="lobby-section">
-        <h2>Open invites</h2>
-        {openInvites.length === 0 ? <p className="muted">No open invites. Post one!</p> : null}
+        <h2>{t('lobby.openInvites')}</h2>
+        {openInvites.length === 0 ? <p className="muted">{t('lobby.noOpenInvites')}</p> : null}
         <ul className="game-list">
           {openInvites.map((game) => (
             <li key={game.gameId}>
               <button type="button" className="game-link" onClick={() => props.onOpenGame(game.gameId)}>
-                {describeGame(game, me)}
+                {describeGame(game, me, t)}
               </button>
               {props.canPlay && props.isGroupMember && game.creator !== me ? (
                 <button type="button" disabled={busy} onClick={() => run(() => props.onJoin(game.gameId))}>
-                  Join
+                  {t('lobby.join')}
                 </button>
               ) : null}
               {game.phase === 'awaitingApproval' && game.creator === me ? (
-                <span className="muted">join requests waiting — open the game</span>
+                <span className="muted">{t('lobby.joinRequestsWaiting')}</span>
               ) : null}
             </li>
           ))}
@@ -144,12 +179,12 @@ export function Lobby(props: LobbyProps) {
 
       {myGames.length > 0 ? (
         <section className="lobby-section">
-          <h2>Your games</h2>
+          <h2>{t('lobby.yourGames')}</h2>
           <ul className="game-list">
             {myGames.map((game) => (
               <li key={game.gameId}>
                 <button type="button" className="game-link" onClick={() => props.onOpenGame(game.gameId)}>
-                  {describeGame(game, me)} — ply {game.history.length}
+                  {t('game.withPly', { summary: describeGame(game, me, t), count: game.history.length })}
                 </button>
               </li>
             ))}
@@ -158,13 +193,13 @@ export function Lobby(props: LobbyProps) {
       ) : null}
 
       <section className="lobby-section">
-        <h2>Watch</h2>
-        {watchable.length === 0 ? <p className="muted">No games in progress.</p> : null}
+        <h2>{t('lobby.watch')}</h2>
+        {watchable.length === 0 ? <p className="muted">{t('lobby.noGamesInProgress')}</p> : null}
         <ul className="game-list">
           {watchable.map((game) => (
             <li key={game.gameId}>
               <button type="button" className="game-link" onClick={() => props.onOpenGame(game.gameId)}>
-                {describeGame(game, me)} — ply {game.history.length}
+                {t('game.withPly', { summary: describeGame(game, me, t), count: game.history.length })}
               </button>
             </li>
           ))}
@@ -173,12 +208,18 @@ export function Lobby(props: LobbyProps) {
 
       {finished.length > 0 ? (
         <section className="lobby-section">
-          <h2>Recently finished</h2>
+          <h2>{t('lobby.recentlyFinished')}</h2>
           <ul className="game-list">
             {finished.map((game) => (
               <li key={game.gameId}>
                 <button type="button" className="game-link" onClick={() => props.onOpenGame(game.gameId)}>
-                  {describeGame(game, me)} — {game.terminal?.result} ({game.terminal?.reason})
+                  {/* `result` is a PGN score token (1-0, 1/2-1/2) — a protocol
+                      value, shown verbatim in every locale. */}
+                  {t('game.withResult', {
+                    summary: describeGame(game, me, t),
+                    result: game.terminal?.result ?? '',
+                    reason: describeTerminalReason(game.terminal?.reason, t),
+                  })}
                 </button>
               </li>
             ))}

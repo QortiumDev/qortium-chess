@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import type { GameService, TrackedGame } from '../game/service';
+import type { TranslateFunction } from '../i18n';
 import { Board, formatMovePairs } from './Board';
-import { describeGame } from './Lobby';
+import { describeGame, describeTerminalReason } from './Lobby';
 
 export type GameRoomProps = {
   game: TrackedGame;
   service: GameService | null;
   me: string | null;
   canPlay: boolean;
+  t: TranslateFunction;
   onBack: () => void;
 };
 
@@ -17,7 +19,7 @@ function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) {
+export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProps) {
   const [chatDraft, setChatDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -55,43 +57,55 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
 
   const banner =
     game.phase === 'terminal'
-      ? `Game over: ${game.terminal?.result} (${game.terminal?.reason})`
+      ? t('game.over', {
+          // PGN score token — a protocol value, not copy.
+          result: game.terminal?.result ?? '',
+          reason: describeTerminalReason(game.terminal?.reason, t),
+        })
       : game.phase === 'aborted'
-        ? 'Game aborted.'
+        ? t('game.aborted')
         : game.phase === 'canceled'
-          ? 'Invite canceled.'
+          ? t('game.inviteCanceled')
           : game.phase === 'pending'
-            ? 'Waiting for an opponent to join…'
+            ? t('game.waitingOpponent')
             : game.phase === 'awaitingApproval'
               ? game.creator === me
-                ? 'Approve a join request to start the game.'
-                : 'Waiting for the creator to approve a joiner…'
+                ? t('game.approvePrompt')
+                : t('game.waitingApproval')
               : myTurn
-                ? 'Your move.'
+                ? t('game.yourMove')
                 : null;
 
   return (
     <div className="game-room">
       <div className="game-room-header">
-        <button type="button" onClick={onBack}>← Lobby</button>
-        <h2>{describeGame(game, me)}</h2>
+        <button type="button" onClick={onBack}>{t('game.backToLobby')}</button>
+        <h2>{describeGame(game, me, t)}</h2>
       </div>
 
       {banner ? <p className="board-status">{banner}</p> : null}
       {error ? <div className="notice">{error}</div> : null}
 
+      {/* A standing fact about the app, not an error, so it is shown for every
+          phase rather than only at `terminal`: the record is lost by walking
+          away mid-game, which is exactly when the player is still able to act
+          on it. QCH1 replays the full history in every message, so a game that
+          keeps being played keeps refreshing itself past the node's chat
+          retention horizon; one that stops simply ages out. */}
+      <p className="notice muted">{t('game.expiryNotice')}</p>
+
       {game.phase === 'awaitingApproval' && game.creator === me && act ? (
         <section className="lobby-section">
-          <h3>Join requests</h3>
+          <h3>{t('game.joinRequests')}</h3>
           <ul className="game-list">
             {game.joiners.map((joiner) => (
               <li key={joiner}>
                 {shortAddress(joiner)}{' '}
                 <button type="button" disabled={busy} onClick={() => run(() => service!.approve(game.gameId, joiner))}>
-                  Approve
+                  {t('game.approve')}
                 </button>{' '}
                 <button type="button" disabled={busy} onClick={() => run(() => service!.reject(game.gameId, joiner))}>
-                  Reject
+                  {t('game.reject')}
                 </button>
               </li>
             ))}
@@ -102,6 +116,7 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
       <div className="board-layout">
         <Board
           history={game.history}
+          t={t}
           orientation={myColor === 'black' ? 'black' : 'white'}
           interactive={myTurn && act && !busy}
           onMove={
@@ -116,10 +131,10 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
               {liveOffer && liveOffer.by !== me ? (
                 <>
                   <button type="button" disabled={busy} onClick={() => run(() => service!.acceptDraw(game.gameId))}>
-                    Accept draw
+                    {t('game.acceptDraw')}
                   </button>
                   <button type="button" disabled={busy} onClick={() => run(() => service!.declineDraw(game.gameId))}>
-                    Decline draw
+                    {t('game.declineDraw')}
                   </button>
                 </>
               ) : (
@@ -128,15 +143,15 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
                   disabled={busy || liveOffer?.by === me}
                   onClick={() => run(() => service!.offerDraw(game.gameId))}
                 >
-                  {liveOffer?.by === me ? 'Draw offered…' : 'Offer draw'}
+                  {liveOffer?.by === me ? t('game.drawOffered') : t('game.offerDraw')}
                 </button>
               )}
               <button type="button" disabled={busy} onClick={() => run(() => service!.resign(game.gameId))}>
-                Resign
+                {t('game.resign')}
               </button>
               {game.history.length < 2 ? (
                 <button type="button" disabled={busy} onClick={() => run(() => service!.abort(game.gameId))}>
-                  Abort
+                  {t('game.abort')}
                 </button>
               ) : null}
             </div>
@@ -149,11 +164,11 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
           </ol>
 
           <section className="game-chat">
-            <h3>Chat</h3>
+            <h3>{t('game.chat')}</h3>
             <ul className="chat-list">
               {chatEvents.map((event) => (
                 <li key={event.signature}>
-                  <strong>{event.signer === me ? 'You' : shortAddress(event.signer)}:</strong>{' '}
+                  <strong>{event.signer === me ? t('label.you') : shortAddress(event.signer)}:</strong>{' '}
                   {(event.message as { text: string }).text}
                 </li>
               ))}
@@ -172,17 +187,20 @@ export function GameRoom({ game, service, me, canPlay, onBack }: GameRoomProps) 
                 <input
                   value={chatDraft}
                   maxLength={2000}
-                  placeholder="Say something…"
+                  placeholder={t('game.chatPlaceholder')}
                   onChange={(e) => setChatDraft(e.target.value)}
                 />
-                <button type="submit" disabled={busy}>Send</button>
+                <button type="submit" disabled={busy}>{t('game.send')}</button>
               </form>
             ) : null}
           </section>
 
           {invalidEvents.length > 0 ? (
             <section className="game-chat">
-              <h3>Rejected messages</h3>
+              <h3>{t('game.rejectedMessages')}</h3>
+              {/* The row body is deliberately untranslated: `message.type` and
+                  `verdict.badge` are QCH1 wire identifiers, quoted verbatim in
+                  the spec, and are what a user pastes into a bug report. */}
               <ul className="chat-list muted">
                 {invalidEvents.map((event) => (
                   <li key={event.signature}>
