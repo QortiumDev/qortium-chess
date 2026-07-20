@@ -58,7 +58,7 @@ const ok: Verdict = { accepted: true };
 const bad = (badge: ValidationBadge, detail?: string): Verdict => ({ accepted: false, badge, detail });
 
 export class GameService {
-  private readonly me: Address;
+  readonly me: Address;
   private readonly transport: ChatTransport;
   private readonly route: Route;
   private readonly rules: RulesAdapter<ClassicState>;

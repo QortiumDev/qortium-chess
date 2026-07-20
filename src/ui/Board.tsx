@@ -1,5 +1,5 @@
-// Local hot-seat board driven by the classic rules adapter. This is the MVP
-// "real starting experience"; networked play arrives with the chat transport.
+// Presentational chess board driven by the classic rules adapter.
+// Controlled: the owner supplies the history and receives chosen moves.
 
 import { useMemo, useState } from 'react';
 import type { Uci } from '../protocol/types';
@@ -46,16 +46,28 @@ function isOwnPiece(piece: string | null, whiteToMove: boolean): boolean {
   return whiteToMove ? piece === piece.toUpperCase() : piece === piece.toLowerCase();
 }
 
-export function Board() {
-  const [history, setHistory] = useState<Uci[]>([]);
+export type BoardProps = {
+  history: readonly Uci[];
+  /** Called with a legal move in UCI form. Absent/undefined = view-only board. */
+  onMove?: (move: Uci) => void;
+  orientation?: 'white' | 'black';
+  /** Extra gate on top of onMove (e.g. "it is my turn"). Default true. */
+  interactive?: boolean;
+};
+
+export function Board({ history, onMove, orientation = 'white', interactive = true }: BoardProps) {
   const [selected, setSelected] = useState<string | null>(null);
 
-  const state = useMemo(() => classicRules.replay(history), [history]);
+  const state = useMemo(() => classicRules.replay([...history]), [history]);
   const status = classicRules.status(state);
   const legal = useMemo(() => classicRules.legalMoves(state), [state]);
   const fen = classicRules.snapshot(state);
-  const board = useMemo(() => boardFromFen(fen), [fen]);
+  const board = useMemo(() => {
+    const rows = boardFromFen(fen);
+    return orientation === 'white' ? rows : rows.map((row) => [...row].reverse()).reverse();
+  }, [fen, orientation]);
   const whiteToMove = fen.split(' ')[1] === 'w';
+  const canPlay = Boolean(onMove) && interactive && !status.over;
 
   const targets = useMemo(() => {
     if (!selected) return new Set<string>();
@@ -63,13 +75,13 @@ export function Board() {
   }, [legal, selected]);
 
   function clickSquare(info: SquareInfo) {
-    if (status.over) return;
+    if (!canPlay) return;
     if (selected && targets.has(info.square)) {
       const plain = selected + info.square;
       // MVP promotion policy: auto-queen (the underpromotion picker comes later).
       const move = legal.includes(plain) ? plain : `${plain}q`;
-      setHistory([...history, move]);
       setSelected(null);
+      onMove?.(move);
       return;
     }
     setSelected(isOwnPiece(info.piece, whiteToMove) ? info.square : null);
@@ -79,55 +91,35 @@ export function Board() {
     ? `Game over — ${status.terminal.result} (${status.terminal.reason})`
     : `${whiteToMove ? 'White' : 'Black'} to move${status.inCheck ? ' — check!' : ''}`;
 
-  const movePairs: string[] = [];
-  for (let i = 0; i < history.length; i += 2) {
-    movePairs.push(
-      `${i / 2 + 1}. ${history[i]}${history[i + 1] ? ' ' + history[i + 1] : ''}`,
-    );
-  }
-
   return (
-    <div className="board-layout">
-      <div>
-        <div className="board-grid" role="grid" aria-label="Chess board">
-          {board.flat().map((info) => (
-            <button
-              key={info.square}
-              type="button"
-              className={[
-                'board-square',
-                info.isDark ? 'dark' : 'light',
-                selected === info.square ? 'selected' : '',
-                targets.has(info.square) ? 'target' : '',
-              ].join(' ')}
-              onClick={() => clickSquare(info)}
-              aria-label={info.square + (info.piece ? ` ${info.piece}` : ' empty')}
-            >
-              {info.piece ? PIECE_GLYPHS[info.piece] : ''}
-            </button>
-          ))}
-        </div>
-        <p className="board-status">{statusLine}</p>
-      </div>
-      <div className="board-side">
-        <div className="board-actions">
-          <button type="button" onClick={() => { setHistory([]); setSelected(null); }}>
-            New game
-          </button>
+    <div>
+      <div className="board-grid" role="grid" aria-label="Chess board">
+        {board.flat().map((info) => (
           <button
+            key={info.square}
             type="button"
-            disabled={history.length === 0}
-            onClick={() => { setHistory(history.slice(0, -1)); setSelected(null); }}
+            className={[
+              'board-square',
+              info.isDark ? 'dark' : 'light',
+              selected === info.square ? 'selected' : '',
+              targets.has(info.square) ? 'target' : '',
+            ].join(' ')}
+            onClick={() => clickSquare(info)}
+            aria-label={info.square + (info.piece ? ` ${info.piece}` : ' empty')}
           >
-            Undo
+            {info.piece ? PIECE_GLYPHS[info.piece] : ''}
           </button>
-        </div>
-        <ol className="board-moves">
-          {movePairs.map((pair) => (
-            <li key={pair}>{pair}</li>
-          ))}
-        </ol>
+        ))}
       </div>
+      <p className="board-status">{statusLine}</p>
     </div>
   );
+}
+
+export function formatMovePairs(history: readonly Uci[]): string[] {
+  const pairs: string[] = [];
+  for (let i = 0; i < history.length; i += 2) {
+    pairs.push(`${i / 2 + 1}. ${history[i]}${history[i + 1] ? ' ' + history[i + 1] : ''}`);
+  }
+  return pairs;
 }

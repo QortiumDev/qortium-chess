@@ -1,44 +1,29 @@
-import { useEffect, useState } from 'react';
-import { getBridgeState, qdnRequest } from './qdnRequest';
-import type { BridgeState, NodeStatus } from './types';
-import { Board } from './ui/Board';
+import { useState } from 'react';
+import { useChessService } from './game/useChessService';
+import { GameRoom } from './ui/GameRoom';
+import { LocalBoard } from './ui/LocalBoard';
+import { Lobby } from './ui/Lobby';
 
 const APP_TITLE = 'Chess';
 
-function describeRuntime(bridgeState: BridgeState | null) {
-  if (!bridgeState) return 'Detecting runtime…';
-  return bridgeState.isHomeBridge ? 'Qortium Home' : 'Local browser (read-only fallback)';
-}
-
-function describeNode(status: NodeStatus | null) {
-  if (!status) return 'node unavailable';
-  if (typeof status.height === 'number') {
-    const sync = typeof status.syncPercent === 'number' ? ` · ${status.syncPercent}%` : '';
-    return `height ${status.height.toLocaleString()}${sync}`;
-  }
-  return 'node connected';
-}
+type View = { kind: 'lobby' } | { kind: 'game'; gameId: string } | { kind: 'local' };
 
 export function App() {
-  const [bridgeState, setBridgeState] = useState<BridgeState | null>(null);
-  const [nodeStatus, setNodeStatus] = useState<NodeStatus | null>(null);
+  const chess = useChessService();
+  const [view, setView] = useState<View>({ kind: 'lobby' });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [state, status] = await Promise.all([
-        getBridgeState().catch(() => null),
-        qdnRequest<NodeStatus>({ action: 'GET_NODE_STATUS' }).catch(() => null),
-      ]);
-      if (!cancelled) {
-        setBridgeState(state);
-        setNodeStatus(status);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const canPlay = chess.status === 'ready';
+  const statusLabel =
+    chess.status === 'connecting'
+      ? 'Connecting…'
+      : chess.status === 'ready'
+        ? `Playing as ${chess.accountName ?? chess.address}`
+        : chess.status === 'spectator'
+          ? 'Spectator (no account)'
+          : 'Lobby unavailable — local play only';
+
+  const activeGame =
+    view.kind === 'game' ? chess.games.find((game) => game.gameId === view.gameId) : undefined;
 
   return (
     <main className="app-shell">
@@ -48,17 +33,64 @@ export function App() {
             <p className="eyebrow">Qortium</p>
             <h1>{APP_TITLE}</h1>
           </div>
-          <p className="runtime-note">
-            {describeRuntime(bridgeState)} · {describeNode(nodeStatus)}
-          </p>
+          <div className="topbar-right">
+            <p className="runtime-note">{statusLabel}</p>
+            <nav className="view-tabs">
+              <button
+                type="button"
+                className={view.kind !== 'local' ? 'active' : ''}
+                onClick={() => setView({ kind: 'lobby' })}
+              >
+                Lobby
+              </button>
+              <button
+                type="button"
+                className={view.kind === 'local' ? 'active' : ''}
+                onClick={() => setView({ kind: 'local' })}
+              >
+                Local board
+              </button>
+            </nav>
+          </div>
         </header>
 
-        <p className="intro">
-          Local board (hot-seat) — play both sides. Networked games over Qortium chat are the
-          next milestone.
-        </p>
-
-        <Board />
+        {view.kind === 'local' ? (
+          <LocalBoard />
+        ) : view.kind === 'game' && activeGame ? (
+          <GameRoom
+            game={activeGame}
+            service={chess.service}
+            me={chess.address}
+            canPlay={canPlay}
+            onBack={() => setView({ kind: 'lobby' })}
+          />
+        ) : chess.status === 'unavailable' ? (
+          <div>
+            <div className="notice">
+              Could not reach the Chess lobby ({chess.error ?? 'no node'}). The local board still works.
+            </div>
+            <LocalBoard />
+          </div>
+        ) : (
+          <Lobby
+            games={chess.games}
+            me={chess.address}
+            isGroupMember={chess.isGroupMember}
+            canPlay={canPlay}
+            onOpenGame={(gameId) => setView({ kind: 'game', gameId })}
+            onCreateInvite={async (colorChoice, note) => {
+              const { gameId } = await chess.service!.createInvite({
+                colorChoice,
+                isPublic: true,
+                ...(note.trim() ? { note: note.trim() } : {}),
+              });
+              setView({ kind: 'game', gameId });
+            }}
+            onJoin={(gameId) => chess.service!.join(gameId)}
+            onCancelInvite={(gameId) => chess.service!.cancelInvite(gameId)}
+            onJoinedGroup={() => chess.refreshMembership()}
+          />
+        )}
       </section>
     </main>
   );

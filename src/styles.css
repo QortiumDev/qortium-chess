@@ -313,3 +313,135 @@ h2 {
   font-size: 14px;
   color: #33413b;
 }
+
+/* --- lobby & game room --- */
+
+.topbar-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.view-tabs button {
+  min-height: 34px;
+  background: transparent;
+  color: #1c2a2f;
+  border: 1px solid #b8c5be;
+}
+
+.view-tabs button.active {
+  background: #1c2a2f;
+  color: #ffffff;
+}
+
+.lobby-section {
+  margin: 20px 0;
+}
+
+.lobby-section h2,
+.lobby-section h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-list li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.game-link {
+  background: #ffffff;
+  color: #1c2a2f;
+  border: 1px solid #b8c5be;
+  font-weight: 600;
+}
+
+.game-link:hover {
+  background: #eef2ef;
+}
+
+.invite-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.invite-form input {
+  max-width: 280px;
+}
+
+.invite-form select {
+  font: inherit;
+  min-height: 42px;
+  border: 1px solid #b8c5be;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #ffffff;
+}
+
+.notice {
+  background: #fff7e0;
+  border: 1px solid #e0cf9a;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+
+.muted {
+  color: #6a7a72;
+}
+
+.game-room-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.game-room-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.game-actions {
+  flex-wrap: wrap;
+}
+
+.game-chat {
+  margin-top: 8px;
+}
+
+.chat-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+}
