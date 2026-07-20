@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Mondj valamit…',
   'game.send': 'Küldés',
   'game.rejectedMessages': 'Elutasított üzenetek',
+  'game.expiryNotice': 'Nincs mentve — ez a játszma a csevegési előzményekkel együtt lejár, hacsak nem folytatódik a játék.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'világos király',

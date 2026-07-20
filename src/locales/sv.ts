@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Säg något…',
   'game.send': 'Skicka',
   'game.rejectedMessages': 'Avvisade meddelanden',
+  'game.expiryNotice': 'Sparas inte — det här partiet upphör tillsammans med chatthistoriken om spelet inte fortsätter.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'vit kung',

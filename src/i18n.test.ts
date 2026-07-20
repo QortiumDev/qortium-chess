@@ -79,7 +79,7 @@ describe('i18n locale parity', () => {
     nb: ['game.backToLobby', 'game.chat', 'game.send', 'game.withResult', 'nav.lobby', 'square.occupied'],
     nl: ['game.backToLobby', 'game.chat', 'game.withResult', 'nav.lobby', 'square.occupied'],
     pl: ['game.withResult', 'square.occupied'],
-    pt: ['game.withResult', 'square.occupied'],
+    pt: ['game.chat', 'game.withResult', 'square.occupied'],
     ro: ['game.withResult', 'square.occupied'],
     ru: ['game.withResult', 'square.occupied'],
     sv: ['game.backToLobby', 'game.withResult', 'nav.lobby', 'square.occupied'],

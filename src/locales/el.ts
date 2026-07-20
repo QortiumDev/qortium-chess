@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Πείτε κάτι…',
   'game.send': 'Αποστολή',
   'game.rejectedMessages': 'Απορριφθέντα μηνύματα',
+  'game.expiryNotice': 'Δεν αποθηκεύεται — αυτή η παρτίδα λήγει μαζί με το ιστορικό συνομιλίας, εκτός αν συνεχιστεί το παιχνίδι.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'λευκός βασιλιάς',

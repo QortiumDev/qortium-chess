@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Spune ceva…',
   'game.send': 'Trimite',
   'game.rejectedMessages': 'Mesaje respinse',
+  'game.expiryNotice': 'Nesalvat — această partidă expiră odată cu istoricul conversației dacă jocul nu continuă.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'rege alb',

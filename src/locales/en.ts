@@ -71,6 +71,7 @@ export const EN_STRINGS = {
   'game.chatPlaceholder': 'Say something…',
   'game.send': 'Send',
   'game.rejectedMessages': 'Rejected messages',
+  'game.expiryNotice': 'Not saved — this game expires with chat history unless play continues.',
 
   // -- board accessibility ---------------------------------------------------
   // Piece names are twelve explicit keys, not a "{color} {piece}" template:

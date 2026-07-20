@@ -66,10 +66,11 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.offerDraw': 'Propor empate',
   'game.resign': 'Desistir',
   'game.abort': 'Abortar',
-  'game.chat': 'Conversa',
+  'game.chat': 'Chat',
   'game.chatPlaceholder': 'Diga alguma coisa…',
   'game.send': 'Enviar',
   'game.rejectedMessages': 'Mensagens rejeitadas',
+  'game.expiryNotice': 'Não salvo — esta partida expira junto com o histórico do chat, a menos que o jogo continue.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'rei branco',

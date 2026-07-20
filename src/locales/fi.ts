@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Sano jotain…',
   'game.send': 'Lähetä',
   'game.rejectedMessages': 'Hylätyt viestit',
+  'game.expiryNotice': 'Ei tallenneta — tämä peli vanhenee keskusteluhistorian mukana, ellei peliä jatketa.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'valkoinen kuningas',

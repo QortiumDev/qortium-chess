@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': '무슨 말이든 해보세요…',
   'game.send': '보내기',
   'game.rejectedMessages': '거부된 메시지',
+  'game.expiryNotice': '저장되지 않음 — 대국을 계속하지 않으면 이 게임은 채팅 기록과 함께 만료됩니다.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': '백 킹',

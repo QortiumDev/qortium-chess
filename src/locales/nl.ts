@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Zeg iets…',
   'game.send': 'Versturen',
   'game.rejectedMessages': 'Geweigerde berichten',
+  'game.expiryNotice': 'Niet opgeslagen — dit spel verloopt met de chatgeschiedenis tenzij er verder wordt gespeeld.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'witte koning',

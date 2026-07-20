@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Ütle midagi…',
   'game.send': 'Saada',
   'game.rejectedMessages': 'Tagasi lükatud sõnumid',
+  'game.expiryNotice': 'Ei salvestata — see mäng aegub koos vestlusajalooga, kui mängimist ei jätkata.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'valge kuningas',

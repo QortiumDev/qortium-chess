@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Scrivi qualcosa…',
   'game.send': 'Invia',
   'game.rejectedMessages': 'Messaggi rifiutati',
+  'game.expiryNotice': 'Non salvata — questa partita scade insieme alla cronologia della chat se il gioco non continua.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 're bianco',

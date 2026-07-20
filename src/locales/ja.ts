@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': '何か話しましょう…',
   'game.send': '送信',
   'game.rejectedMessages': '拒否されたメッセージ',
+  'game.expiryNotice': '保存されません — 対局を続けない限り、このゲームはチャット履歴とともに期限切れになります。',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': '白のキング',

@@ -705,13 +705,34 @@ h3 {
 
 /* ---- view tabs ------------------------------------------------------------ */
 
+/* nav-1: the strip MUST be able to break. Three tabs have a min-content width
+   of ~532px at textSize=huge, so an unbreakable single line widened the whole
+   document past a 320px viewport (documentElement.scrollWidth 532 > 320) and
+   clipped the last label.
+
+   Wrapping is chosen over `overflow-x: auto` deliberately: with only three
+   destinations this is primary navigation, and a scroller would park a whole
+   view (Developers) off-screen behind a gesture with no affordance, which is
+   worse than a second line. The topbar already stacks to a column at <=720px,
+   so the extra row costs nothing where it actually happens.
+
+   `min-width: 0` lets the nav shrink inside the topbar flex item rather than
+   forcing its parent — and the page — wider. */
 .view-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .view-tabs button {
+  /* A label that wraps to two lines must grow the button, not spill out of a
+     fixed-height box: min-height is a floor, and the vertical padding keeps
+     the second line off the border. `min-width: 0` lets a single over-long
+     label shrink instead of widening the strip. */
   min-height: 34px;
+  min-width: 0;
+  padding: 4px 12px;
   background: transparent;
   color: var(--qch-text-secondary);
   border: 1px solid var(--qch-border);
@@ -892,11 +913,32 @@ h3 {
   /* board-5: never inherits a decorative page background, in any UI family. */
   background: var(--qch-square-light);
   background-image: none;
+  /* board-6: a chessboard is not text. Under an RTL language <html dir="rtl">
+     propagates `direction: rtl` into the board, and because each .board-row is
+     a grid container that reverses its own column order: a1 rendered at the
+     bottom RIGHT and the white king appeared on d1. It also inverted keyboard
+     nav, since Board.tsx's arrow logic is correct in file terms (a->h) and the
+     screen was mirrored underneath it.
+
+     The fix is containment, not logic: the file axis is pinned to LTR here, at
+     the board root, so orientation is a property of the board rather than of
+     the page language. The rows below repeat it — see there. Everything
+     outside .board-grid (status line, move list, side panels, the whole
+     surrounding UI) keeps the document's direction and still renders RTL. */
+  direction: ltr;
 }
 
 .board-row {
   display: grid;
   grid-template-columns: repeat(8, minmax(30px, var(--qch-square-max)));
+  /* Restated rather than left to inheritance from .board-grid: the row IS the
+     grid container, so its own `direction` is what decides which end of the
+     rank column 1 lands on. Keeping it on the element that consumes it means a
+     future refactor cannot re-mirror the board by reparenting a row or by
+     setting `direction` on an element in between. Cells hold only decorative
+     piece glyphs (identity lives in aria-label), so no readable text is forced
+     LTR by this. */
+  direction: ltr;
 }
 
 .board-square {
@@ -1646,6 +1688,25 @@ textarea:focus-visible {
      below: children may scroll, the document may not. */
   min-width: 0;
   max-width: 100%;
+}
+
+/* The scroll containers below already handle wide <pre>/<table> content, but
+   the reference's own headings were left to overflow: at 320px with
+   textSize=huge, single long words in the Classic heading face
+   ("compatibility", "reference") measured wider than the column — h2 was 300px
+   inside a 254px box — and pushed the document to 333px. This was pre-existing
+   and merely masked by the larger nav-1 overflow above.
+
+   Headings here are prose, not a contract that has to stay on one line, so
+   they may break inside a word as a last resort. `anywhere` rather than
+   `break-word` because only `anywhere` also lets the break count when the box
+   is measured, which is what actually brings min-content down and stops the
+   overflow propagating. Matches the `overflow-wrap: anywhere` already used on
+   reference code and table cells. */
+.developer-reference h1,
+.developer-reference h2,
+.developer-reference h3 {
+  overflow-wrap: anywhere;
 }
 
 .reference-hero {

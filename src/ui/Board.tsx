@@ -88,7 +88,10 @@ function makeSquare(fileIndex: number, rank: number, piece: string | null): Squa
   return {
     square: FILES[fileIndex] + rank,
     piece,
-    isDark: (fileIndex + rank) % 2 === 0,
+    // a1 is a dark square, h1 light ("white on the right"). fileIndex is
+    // 0-based and rank is 1-based, so a1 sums to 1 — dark squares are the odd
+    // sums, not the even ones.
+    isDark: (fileIndex + rank) % 2 === 1,
   };
 }
 

@@ -66,6 +66,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'قل شيئًا…',
   'game.send': 'إرسال',
   'game.rejectedMessages': 'الرسائل المرفوضة',
+  'game.expiryNotice': 'غير محفوظة — تنتهي صلاحية هذه المباراة مع سجل المحادثة ما لم يستمر اللعب.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'الملك الأبيض',

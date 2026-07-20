@@ -34,13 +34,42 @@ type QdnHostWindow = Window & {
   _qdnUIStyle?: unknown;
 };
 
-const DEFAULT_DISPLAY_SETTINGS: QdnDisplaySettings = {
+export const DEFAULT_DISPLAY_SETTINGS: QdnDisplaySettings = {
   accent: 'green',
   language: 'en',
   textSize: 'medium',
   theme: 'light',
   uiStyle: 'classic',
 };
+
+/* fouc-1 — DUPLICATED LOGIC, INTENTIONAL, PINNED BY A TEST.
+   ---------------------------------------------------------------------------
+   index.html carries a small inline <script> in <head> that stamps the four
+   attributes below onto <html> before the render-blocking stylesheet paints.
+   It has to be inline and duplicated: this module arrives as a deferred ES
+   module, so by the time applyDisplaySettings() runs the browser has already
+   painted a frame of the Classic-light defaults (measured ~140ms of light
+   background on a ?theme=dark load).
+
+   That inline copy re-implements a slice of this file: the query-param names,
+   the ?-vs-window precedence, the trim/lowercase + membership normalization,
+   the defaults, and the attribute names. Divergence between the two would be
+   invisible at build time and would surface only as a flash of the WRONG
+   setting, so the pair is pinned by src/bootTheme.test.ts, which extracts the
+   real script out of index.html, runs it, and asserts its output matches
+   applyDisplaySettings(getInitialDisplaySettings()) over a matrix of URLs.
+   Change one side and that test fails. Change both together.
+
+   Scope is deliberately limited to the four attributes styles.css actually
+   keys on. `language`/`dir` are NOT duplicated: no selector in styles.css
+   matches [dir] or [data-language], so they cannot flash the stylesheet, and
+   inlining the BCP-47 mapper would be the larger correctness risk. */
+export const BOOT_STYLE_CONTRACT = {
+  accent: { attribute: 'data-accent', default: DEFAULT_DISPLAY_SETTINGS.accent, values: ACCENT_OPTIONS },
+  textSize: { attribute: 'data-text-size', default: DEFAULT_DISPLAY_SETTINGS.textSize, values: TEXT_SIZE_VALUES },
+  theme: { attribute: 'data-theme', default: DEFAULT_DISPLAY_SETTINGS.theme, values: ['dark', 'light'] },
+  uiStyle: { attribute: 'data-ui', default: DEFAULT_DISPLAY_SETTINGS.uiStyle, values: UI_STYLE_OPTIONS },
+} as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object';

@@ -54,6 +54,35 @@ function PlayableBoard({ orientation }: { orientation?: 'white' | 'black' }) {
   );
 }
 
+describe('board colouring', () => {
+  // a1 rendered light and h1 dark for the whole of this app's life — invisible
+  // to every test, obvious to any player. fileIndex is 0-based and rank is
+  // 1-based, so the parity that reads as "even" in code is the odd square.
+  it.each([
+    ['a1', 'dark'],
+    ['h1', 'light'],
+    ['a8', 'light'],
+    ['h8', 'dark'],
+    ['e4', 'light'],
+    ['d4', 'dark'],
+  ])('renders %s as a %s square', (square, shade) => {
+    renderBoard();
+
+    const cell = screen.getByRole('gridcell', { name: new RegExp(`^${square},`) });
+
+    expect(cell.className).toContain(shade);
+    expect(cell.className).not.toContain(shade === 'dark' ? 'light' : 'dark');
+  });
+
+  it('keeps the colouring when the board is flipped', () => {
+    renderBoard({ orientation: 'black' });
+
+    // Orientation changes where a square sits on screen, never its colour.
+    expect(screen.getByRole('gridcell', { name: /^a1,/ }).className).toContain('dark');
+    expect(screen.getByRole('gridcell', { name: /^h1,/ }).className).toContain('light');
+  });
+});
+
 describe('board structure', () => {
   it('is a single tab stop, not sixty-four', async () => {
     const user = userEvent.setup();

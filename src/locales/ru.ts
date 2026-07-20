@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Скажите что-нибудь…',
   'game.send': 'Отправить',
   'game.rejectedMessages': 'Отклонённые сообщения',
+  'game.expiryNotice': 'Не сохраняется — эта партия исчезнет вместе с историей чата, если игра не продолжится.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'белый король',

@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'Si noe…',
   'game.send': 'Send',
   'game.rejectedMessages': 'Avviste meldinger',
+  'game.expiryNotice': 'Ikke lagret — dette partiet utløper sammen med chatthistorikken hvis spillet ikke fortsetter.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'hvit konge',

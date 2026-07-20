@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': '說點什麼…',
   'game.send': '傳送',
   'game.rejectedMessages': '被拒絕的訊息',
+  'game.expiryNotice': '不會儲存 — 除非繼續對弈，否則此對局將隨聊天記錄一起過期。',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': '白王',

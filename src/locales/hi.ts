@@ -65,6 +65,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'कुछ कहें…',
   'game.send': 'भेजें',
   'game.rejectedMessages': 'अस्वीकृत संदेश',
+  'game.expiryNotice': 'सहेजा नहीं गया — यह खेल चैट इतिहास के साथ समाप्त हो जाएगा जब तक खेल जारी न रहे।',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'सफ़ेद राजा',

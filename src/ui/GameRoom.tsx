@@ -86,6 +86,14 @@ export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProp
       {banner ? <p className="board-status">{banner}</p> : null}
       {error ? <div className="notice">{error}</div> : null}
 
+      {/* A standing fact about the app, not an error, so it is shown for every
+          phase rather than only at `terminal`: the record is lost by walking
+          away mid-game, which is exactly when the player is still able to act
+          on it. QCH1 replays the full history in every message, so a game that
+          keeps being played keeps refreshing itself past the node's chat
+          retention horizon; one that stops simply ages out. */}
+      <p className="notice muted">{t('game.expiryNotice')}</p>
+
       {game.phase === 'awaitingApproval' && game.creator === me && act ? (
         <section className="lobby-section">
           <h3>{t('game.joinRequests')}</h3>

@@ -66,6 +66,7 @@ const MESSAGES: Partial<Record<keyof typeof EN_STRINGS, string>> = {
   'game.chatPlaceholder': 'אמור משהו…',
   'game.send': 'שלח',
   'game.rejectedMessages': 'הודעות שנדחו',
+  'game.expiryNotice': 'לא נשמר — המשחק הזה יפוג יחד עם היסטוריית הצ׳אט אלא אם המשחק נמשך.',
 
   // -- board accessibility ---------------------------------------------------
   'piece.whiteKing': 'מלך לבן',
