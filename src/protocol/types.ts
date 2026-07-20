@@ -8,28 +8,72 @@ export type GameId = string; // 32-char lowercase hex (blake2b-256 truncated to 
 export const PROTO_TAG = 'QCH1';
 export const PROTO_VERSION = '1.0';
 export const APP_MARKER = 'chess';
+
+/** Core's hard CHAT transaction data limit; the envelope budget sits under it. */
+export const MAX_CHAT_TX_BYTES = 4000;
 export const MAX_ENVELOPE_BYTES = 3800; // headroom under the 4000-byte CHAT limit
 
 /** The public Chess lobby group on Previewnet (created 2026-07-20, open membership). */
 export const CHESS_GROUP_ID = 14;
 
-export type RulesetId = 'classic';
+/**
+ * QDN archive contract (spec §6.2). The archive transport is not implemented
+ * yet; these are the published identifier/service names it must use, and the
+ * Developers reference renders them from here rather than from prose.
+ */
+export const ARCHIVE_SERVICE = 'GAME';
+export const ARCHIVE_SERVICE_ID = 1500;
+export const ARCHIVE_IDENTIFIER_PREFIX = 'chess-game-';
 
-export type GameResult = '1-0' | '0-1' | '1/2-1/2';
+/** `chess-game-<gameId>` — one archive per match, updated in place on re-save. */
+export function buildArchiveIdentifier(gameId: GameId): string {
+  return `${ARCHIVE_IDENTIFIER_PREFIX}${gameId}`;
+}
 
-export type TerminalReason =
-  | 'checkmate'
-  | 'stalemate'
-  | 'insufficient-material'
-  | 'fifty-move'
-  | 'threefold-repetition'
-  | 'draw-agreed'
-  | 'resign'
-  | 'abort';
+/** Hex lengths, in characters, of the protocol's identifier forms. */
+export const GAME_ID_HEX_LENGTH = 32;
+export const NONCE_HEX_LENGTH = 32;
+export const STATE_HASH_HEX_LENGTH = 64;
+
+/** Field limits enforced by `validateMessage`. */
+export const MAX_INVITE_NOTE_LENGTH = 160;
+export const MAX_CHAT_TEXT_LENGTH = 2000;
+export const MIN_ADDRESS_LENGTH = 20;
+export const MAX_ADDRESS_LENGTH = 64;
+
+/** The abort window closes once both sides have moved (spec §4.4). */
+export const ABORT_MAX_HISTORY_LENGTH = 2;
+
+export const RULESET_IDS = ['classic'] as const;
+export type RulesetId = (typeof RULESET_IDS)[number];
+
+export const GAME_RESULTS = ['1-0', '0-1', '1/2-1/2'] as const;
+export type GameResult = (typeof GAME_RESULTS)[number];
+
+export const TERMINAL_REASONS = [
+  'checkmate',
+  'stalemate',
+  'insufficient-material',
+  'fifty-move',
+  'threefold-repetition',
+  'draw-agreed',
+  'resign',
+  'abort',
+] as const;
+export type TerminalReason = (typeof TERMINAL_REASONS)[number];
+
+/** Terminal reasons the adapter declares on its own, with no claim message. */
+export const AUTO_DRAW_REASONS = [
+  'stalemate',
+  'insufficient-material',
+  'fifty-move',
+  'threefold-repetition',
+] as const;
 
 export type Terminal = { result: GameResult; reason: TerminalReason };
 
-export type ColorChoice = 'White' | 'Black' | 'Random';
+export const COLOR_CHOICES = ['White', 'Black', 'Random'] as const;
+export type ColorChoice = (typeof COLOR_CHOICES)[number];
 
 export type Qch1MessageBase = {
   protoTag: typeof PROTO_TAG;
@@ -39,19 +83,21 @@ export type Qch1MessageBase = {
   from: Address;
 };
 
-export type Qch1MessageType =
-  | 'invite'
-  | 'cancelInvite'
-  | 'join'
-  | 'approve'
-  | 'reject'
-  | 'move'
-  | 'drawOffer'
-  | 'drawAccept'
-  | 'drawDecline'
-  | 'resign'
-  | 'abort'
-  | 'chat';
+export const QCH1_MESSAGE_TYPES = [
+  'invite',
+  'cancelInvite',
+  'join',
+  'approve',
+  'reject',
+  'move',
+  'drawOffer',
+  'drawAccept',
+  'drawDecline',
+  'resign',
+  'abort',
+  'chat',
+] as const;
+export type Qch1MessageType = (typeof QCH1_MESSAGE_TYPES)[number];
 
 export type Qch1Invite = Qch1MessageBase & {
   type: 'invite';
@@ -104,22 +150,24 @@ export type Qch1Envelope = {
   qch1: Qch1Message;
 };
 
-export type ValidationBadge =
-  | 'invalid.schema'
-  | 'invalid.signerMismatch'
-  | 'invalid.notParticipant'
-  | 'invalid.stateNotActive'
-  | 'invalid.plyOutOfOrder'
-  | 'invalid.historyMismatch'
-  | 'invalid.notYourTurn'
-  | 'invalid.illegalMove'
-  | 'invalid.stateHashMismatch'
-  | 'invalid.duplicatedMessage'
-  | 'invalid.badLifecycle'
-  | 'invalid.abortWindowClosed'
-  | 'invalid.noLiveDrawOffer'
-  | 'invalid.oversized'
-  | 'invalid.versionUnsupported';
+export const VALIDATION_BADGES = [
+  'invalid.schema',
+  'invalid.signerMismatch',
+  'invalid.notParticipant',
+  'invalid.stateNotActive',
+  'invalid.plyOutOfOrder',
+  'invalid.historyMismatch',
+  'invalid.notYourTurn',
+  'invalid.illegalMove',
+  'invalid.stateHashMismatch',
+  'invalid.duplicatedMessage',
+  'invalid.badLifecycle',
+  'invalid.abortWindowClosed',
+  'invalid.noLiveDrawOffer',
+  'invalid.oversized',
+  'invalid.versionUnsupported',
+] as const;
+export type ValidationBadge = (typeof VALIDATION_BADGES)[number];
 
 export type Verdict =
   | { accepted: true }

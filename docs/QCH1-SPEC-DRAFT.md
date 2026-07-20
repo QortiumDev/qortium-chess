@@ -66,11 +66,22 @@ Moves on the wire are lowercase UCI coordinate form: `e2e4`, `e7e8q` (promotion 
 - Every `move` message carries `ply`, `move` (UCI), full `history`, `prevHash` (last accepted stateHash), `stateHash` (after this move). Ply-1 `prevHash` is the hash of the empty-history payload.
 - Terminal messages (`resign`, result records) reference the last accepted `stateHash` and the terminal-payload hash.
 
-Size check: 4000-byte CHAT limit; UCI history ≈ 5 B/ply → a 300-ply game ≈ 1.5 KB + envelope ≈ well under budget. Hard guard at 3800 B as in QC1.
+Size check: 4000-byte CHAT limit; UCI history ≈ 5 B/ply → a 300-ply game ≈ 1.5 KB + envelope ≈ well under budget. Hard guard at 3800 B as in QC1, enforced on **both** sides: the sender's `encodeEnvelope` throws before transmitting, and a receiver badges an over-budget envelope `invalid.oversized`. The receive-side size gate runs only after `app` identifies the payload as ours — a long human chat line is ordinary content, not an oversized envelope — and before schema validation, so a hostile sender cannot make a receiver parse an over-budget record.
 
 ### 4.4 Message types
 
 All messages: `{protoTag:"QCH1", protoVersion:"1.0", type, gameId, from}` + per-type fields.
+
+**Version semantics (implemented 2026-07-20, `src/protocol/envelope.ts`):** `protoVersion` is parsed as `major.minor` (grammar `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`), never compared as an opaque string.
+
+| received version | outcome |
+| --- | --- |
+| same major, minor ≤ ours | fully valid; validated as this document describes |
+| same major, minor **>** ours | **forward-compatible**: known fields are validated normally, unknown fields ignored, message accepted — a 1.0 client keeps playing a 1.1 client |
+| different major | rejected with `invalid.versionUnsupported`; never mutates state, whatever the fields look like |
+| unparseable (`"1"`, `"1.0.0"`, `"one"`, non-string) | rejected with `invalid.schema`, detail `protoVersion` |
+
+Consequence for evolution: an additive change (new optional field, or a new `type` older clients may ignore) is a **minor** bump; a change that would make an older client misread a record it still accepts must be a **major** bump, since only the major is a hard gate. A newer minor carrying an unknown `type` is still recorded as `invalid.schema` — surfaced, never silently dropped, never state-mutating.
 
 | type | fields | rules |
 | --- | --- | --- |
@@ -99,15 +110,15 @@ Sent as the `message` string of `SEND_CHAT_MESSAGE` (Home stores it as base58 UT
 
 ## 5. Validation (receive gates, per `move`)
 
-Inherited from QC1 Part I, adapter-backed: (1) envelope shape + schema; (2) signer == `from`; (3) sender is a bound player; (4) game Active; (5) `ply == prev+1`; (6) `prevHash` matches; (7) side-to-move correct; (8) `decodeMove` succeeds and move ∈ `legalMoves` — **now via chess.js, the gate QC1 never implemented**; (9) recomputed `stateHash` matches. Failures annotate the event stream with QC1's badge taxonomy (`invalid.notYourTurn`, `invalid.illegalMove`, `invalid.historyMismatch`, …) and never mutate game state. Duplicate suppression by chat-tx signature.
+Inherited from QC1 Part I, adapter-backed, with two envelope-level gates ahead of them: (0a) received envelope within the 3800-byte budget (`invalid.oversized`); (0b) version gate (§4.4 — foreign major → `invalid.versionUnsupported`). Then: (1) envelope shape + schema; (2) signer == `from`; (3) sender is a bound player; (4) game Active; (5) `ply == prev+1`; (6) `prevHash` matches; (7) side-to-move correct; (8) `decodeMove` succeeds and move ∈ `legalMoves` — **now via chess.js, the gate QC1 never implemented**; (9) recomputed `stateHash` matches. Failures annotate the event stream with QC1's badge taxonomy (`invalid.notYourTurn`, `invalid.illegalMove`, `invalid.historyMismatch`, …) and never mutate game state. Duplicate suppression by chat-tx signature.
 
 ## 6. Transports
 
 ### 6.1 Live play — CHAT (MVP)
 - **Public games:** the `Chess` group — **created on Previewnet 2026-07-20: groupId 14**, owner `QaLdnApWW3hps1qXM8cpsL1pVgw7RtyJmN` (the publishing account), open membership, approvalThreshold NONE. Posting requires membership (Core enforces); offer in-app JOIN_GROUP. Spectating needs no membership (search/websocket read).
-- **Private games:** Qortium's E2E-encrypted direct chat (`SEND_CHAT_MESSAGE` + `SEARCH_PRIVATE_DIRECT_CHAT_MESSAGES` family) — a real upgrade over QC1's plain DMs: private games are actually private.
-- **Bridge actions used (all exist in Home today):** `SEND_CHAT_MESSAGE`, `SEARCH_CHAT_MESSAGES`, private-chat search/key actions, `GET_HOST_INFO`, `JOIN_GROUP`, QDN publish/fetch/search (§6.2). Live updates via node websocket `/websockets/chat/messages` (pattern proven in qortium-chat) with search-polling fallback.
-- Expiry: chat retention is node-configurable, default 24 h. UI shows the QC1-style "expires in ~HH:MM" from the latest valid message. An in-progress game older than retention is simply gone from live view — but see 6.2.
+- **Private / direct-message games — DEFERRED, NOT IMPLEMENTED (decision 2026-07-20).** Out of scope for now: `QortiumChatTransport.send` throws `Direct-message games are not implemented yet.` for any non-group route, and `fetch`/`subscribe` return empty for them. The intended future shape is Qortium's E2E-encrypted direct chat (`SEND_CHAT_MESSAGE` + `SEARCH_PRIVATE_DIRECT_CHAT_MESSAGES` family) — a real upgrade over QC1's plain DMs — but nothing in this document about private games describes behaviour that exists today. The `Route` seam is in place so adding it later needs no protocol change.
+- **Bridge actions actually used:** `SEND_CHAT_MESSAGE`, `SEARCH_CHAT_MESSAGES`, `FETCH_NODE_API` (backlog fallback + group membership lookup), `JOIN_GROUP`, `GET_SELECTED_ACCOUNT`, `SHOW_ACTIONS`, `WHICH_UI`. Live updates via node websocket `/websockets/chat/messages` (pattern proven in qortium-chat) with search-polling fallback. **Correction:** earlier drafts listed `GET_HOST_INFO` here — the app never calls it. It is referenced only as the QAVS host-level mechanism (§8): a host advertises its platform level via `GET_HOST_INFO`, and the app's `qortium-app.json` version must respect the ≤ rule. Private-chat search/key actions are likewise not used (see the deferred item above). QDN publish/fetch/search belong to §6.2 and are not implemented yet either.
+- Expiry: chat retention is **user-configurable**; 24 h is only the default. This is a newer Qortium feature that did not exist when the original q-chess `QC1` spec was written — QC1 could assume a flat 24 h horizon, QCH1 cannot. A client must therefore treat retention as unknown-but-finite rather than as a fixed 24 h clock: the QC1-style "expires in ~HH:MM" readout is a hint derived from the default, not a guarantee. An in-progress game older than the node's retention is simply gone from live view — but see 6.2.
 
 ### 6.2 Durability — QDN archives & saves (MVP)
 On terminal state — **and at any earlier point, as a "save"** — either/both players (spectators optionally) publish a **game archive**:
@@ -122,7 +133,9 @@ On terminal state — **and at any earlier point, as a "save"** — either/both 
 
 ## 7. Lifecycle
 
-QC1's state machine, kept: `Pending —join→ AwaitingApproval —approve→ Active —(mate/draw/resign)→ Terminal`, with `cancelInvite`/`reject` edges, plus the new abort restriction (§4.4) and auto-draw terminals. Color resolution: creator's choice or, for Random, derived from `blake2b(gameId || approveTxSignature)` low bit — deterministic for all observers rather than QC1's "creator's local RNG" (which spectators couldn't verify). **(flagged: verify approve-tx signature is available to all observers at approve time; fallback = low bit of gameId.)**
+QC1's state machine, kept: `Pending —join→ AwaitingApproval —approve→ Active —(mate/draw/resign)→ Terminal`, with `cancelInvite`/`reject` edges, plus the new abort restriction (§4.4) and auto-draw terminals. Color resolution: creator's choice or, for Random, derived from `blake2b(gameId || approveSignature)` low bit — deterministic for all observers rather than QC1's "creator's local RNG" (which spectators couldn't verify).
+
+**Resolved in code 2026-07-20 (was the last flagged item).** `resolveColors` in `src/game/service.ts` uses the **chat-message signature of the `approve` message**, which every observer already holds: it arrives on the same `IncomingChat` record that carries the approve, from both the websocket and the search fallback, so a spectator derives the identical assignment. The proposed "fallback = low bit of gameId" was never needed and is **not** implemented — a gameId fallback would also be weaker, since the creator picks the nonce and could grind a gameId for a preferred colour. Covered by the "resolves Random colors identically on every client" lifecycle test across creator, joiner, and spectator services.
 
 ## 8. App packaging
 
@@ -157,5 +170,8 @@ All original open questions were answered by QuickMythril on 2026-07-20; decisio
 5. **Auto-draw → accepted** where appropriate (§4.4 stands).
 6. **Spectator chat → allowed** from MVP with per-user local ignore (chat is public anyway).
 7. **First release = 1.4.0** under QAVS (matters only once new Home/Core capabilities are used).
+8. **§7 colour resolution → resolved in code (2026-07-20):** the approve chat-message signature is available to every observer; `resolveColors` uses it and the gameId fallback was never needed and is not implemented. Removed from the open list.
+9. **Version gate → implemented (2026-07-20, §4.4):** `protoVersion` parsed as `major.minor`; same-major forward-compatible, foreign major `invalid.versionUnsupported`, unparseable `invalid.schema`.
+10. **Private/direct-message games → deferred (§6.1):** explicitly out of scope; the transport throws for non-group routes.
 
-Remaining flagged item: §7 color-resolution fallback (approve-tx signature availability at approve time) — verify during transport implementation.
+No open questions remain in this list. Pending separately (not tracked here): the §6.2 QDN archive decisions.

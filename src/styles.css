@@ -876,9 +876,14 @@ h3 {
   align-items: flex-start;
 }
 
+/* The 8x8 is laid out as eight explicit rows rather than one 64-cell grid:
+   the ARIA grid pattern needs real role="row" elements between the grid and
+   its cells, and `display: contents` on those rows has a history of dropping
+   them out of the accessibility tree. Each row carries the column template
+   instead, so every row lines up. */
 .board-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(30px, var(--qch-square-max)));
+  display: flex;
+  flex-direction: column;
   border: var(--qch-board-frame-width) solid var(--qch-board-frame);
   border-radius: 4px;
   overflow: hidden;
@@ -887,6 +892,11 @@ h3 {
   /* board-5: never inherits a decorative page background, in any UI family. */
   background: var(--qch-square-light);
   background-image: none;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(30px, var(--qch-square-max)));
 }
 
 .board-square {
@@ -934,10 +944,10 @@ h3 {
    its own geometry:
      selected  — solid inset ring
      target    — centred dot (shape, not a wash)
-     last-move — inset band along the square edge (forward-declared)
-     check     — dashed inset ring (forward-declared)
-   The last two classes are not emitted by Board.tsx yet; the rules are here so
-   the markup can adopt them without another styling pass. */
+     last-move — inset band along the square edge
+     check     — dashed inset ring
+   Each of the four also has an assistive-technology equivalent in the square's
+   accessible name (Board.tsx, a11y-4); neither channel is load-bearing alone. */
 .board-square.selected {
   outline: 3px solid var(--qch-square-selected);
   outline-offset: -3px;
@@ -1611,5 +1621,469 @@ textarea:focus-visible {
 
   .view-tabs button {
     min-height: 40px;
+  }
+}
+
+/* ===========================================================================
+   Developers workspace — the in-app protocol reference.
+
+   SPEC-spec-first-qortium-apps.md §7: this is part of the app, not an
+   unstyled documentation island. Everything below is driven by the existing
+   --qch-* tokens (and the Fun family's --fun-* identity tokens), so theme,
+   accent, textSize and uiStyle all reach it with no new hardcoded colour.
+
+   The hard constraint is reflow: tables, preformatted examples, and long
+   hex identifiers must scroll or wrap inside their own container and never
+   widen the document, including at 320px and at textSize=huge.
+   =========================================================================== */
+
+.developer-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  /* A flex/grid item defaults to min-width:auto, which lets a wide <pre> or
+     <table> push the whole page wider. This is the anchor for everything
+     below: children may scroll, the document may not. */
+  min-width: 0;
+  max-width: 100%;
+}
+
+.reference-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reference-hero p {
+  margin: 0;
+  color: var(--qch-text-secondary);
+  max-width: 68ch;
+}
+
+/* -- section navigation ----------------------------------------------------- */
+
+.reference-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius);
+  background: var(--qch-surface-alt);
+  min-width: 0;
+}
+
+.reference-toc a {
+  padding: 6px 12px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-pill);
+  background: var(--qch-surface);
+  color: var(--qch-text-secondary);
+  font-size: var(--qch-text-small);
+  font-weight: 700;
+  text-decoration: none;
+  /* Touch target (WCAG 2.5.5) without forcing the pill taller than its text
+     at huge sizes. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.reference-toc a:hover {
+  border-color: var(--qch-accent);
+  color: var(--qch-accent);
+}
+
+/* -- sections --------------------------------------------------------------- */
+
+.reference-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius);
+  background: var(--qch-surface);
+  box-shadow: var(--qch-shadow);
+  min-width: 0;
+  /* Anchor links must not land under the topbar. */
+  scroll-margin-top: 16px;
+}
+
+.reference-section p {
+  margin: 0;
+  color: var(--qch-text-secondary);
+  max-width: 74ch;
+  /* A hex hash or an identifier with no spaces must break rather than
+     stretch its paragraph. */
+  overflow-wrap: anywhere;
+}
+
+.reference-section p strong {
+  color: var(--qch-text-primary);
+}
+
+.reference-warning {
+  padding: 14px 16px;
+  border: 1px solid var(--qch-warning);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-warning-soft);
+  color: var(--qch-text-primary) !important;
+  max-width: none !important;
+}
+
+/* -- inline code and identifiers -------------------------------------------- */
+
+.developer-reference code {
+  font-family: var(--qch-font-mono);
+  /* 0.92em rather than a fixed px size, so it tracks --qch-scale through the
+     inherited font-size at every textSize step including huge. */
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+.reference-section p code,
+.reference-section td code,
+.reference-section th code,
+.reference-badges code {
+  padding: 1px 5px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-surface-alt);
+  color: var(--qch-text-primary);
+}
+
+.reference-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/* -- the scroll container ---------------------------------------------------
+   Every table and every loose <pre> is wrapped in one of these. The overflow
+   lives here, on a min-width:0 block, so wide technical content scrolls
+   inside its own box instead of creating a document-level canvas. */
+
+.reference-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-surface-alt);
+}
+
+.reference-scroll > pre {
+  margin: 0;
+  padding: 14px 16px;
+}
+
+/* -- tables ----------------------------------------------------------------- */
+
+.developer-reference table {
+  width: 100%;
+  /* Content decides the width; the wrapper scrolls if that exceeds the page. */
+  min-width: 32ch;
+  border-collapse: collapse;
+  font-size: var(--qch-text-small);
+  text-align: start;
+}
+
+.developer-reference caption {
+  padding: 10px 14px;
+  color: var(--qch-muted);
+  font-size: var(--qch-text-small);
+  font-weight: 800;
+  text-align: start;
+  text-transform: uppercase;
+}
+
+.developer-reference th,
+.developer-reference td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--qch-border);
+  color: var(--qch-text-secondary);
+  vertical-align: top;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.developer-reference thead th {
+  border-top: 0;
+  color: var(--qch-text-primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.developer-reference tbody th {
+  color: var(--qch-text-primary);
+  font-weight: 700;
+}
+
+/* -- copyable examples ------------------------------------------------------ */
+
+.reference-code {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-surface-alt);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.reference-code figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--qch-border);
+  background: var(--qch-control);
+  color: var(--qch-text-primary);
+  min-width: 0;
+}
+
+.reference-code figcaption strong {
+  font-size: var(--qch-text-small);
+  overflow-wrap: anywhere;
+}
+
+.reference-copy {
+  flex: none;
+  min-height: 32px;
+  padding: 4px 14px;
+  border: 1px solid var(--qch-border);
+  border-radius: var(--qch-radius-sm);
+  background: var(--qch-surface);
+  color: var(--qch-text-primary);
+  font-size: var(--qch-text-small);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reference-copy:hover {
+  border-color: var(--qch-accent);
+  color: var(--qch-accent);
+}
+
+.reference-code pre {
+  margin: 0;
+  padding: 14px 16px;
+  /* The example is the contract: it is never re-wrapped, it scrolls, and it
+     stays selectable for manual copying when the clipboard is blocked. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.developer-reference pre {
+  color: var(--qch-text-primary);
+  font-family: var(--qch-font-mono);
+  font-size: var(--qch-text-small);
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+.developer-reference pre code {
+  font-size: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* A scrollable region is a keyboard-reachable region; it needs a visible ring. */
+.developer-reference pre:focus-visible,
+.reference-scroll:focus-visible {
+  outline: 3px solid var(--qch-accent);
+  outline-offset: -3px;
+}
+
+/* -- Modern: flatter chrome, same tokens ------------------------------------ */
+
+:root[data-ui='modern'] .reference-section,
+:root[data-ui='modern'] .reference-code,
+:root[data-ui='modern'] .reference-scroll,
+:root[data-ui='modern'] .reference-toc,
+:root[data-ui='modern'] .reference-toc a,
+:root[data-ui='modern'] .reference-copy {
+  border-radius: var(--qch-radius-sm);
+  box-shadow: none;
+}
+
+:root[data-ui='modern'] .reference-toc a {
+  border-radius: var(--qch-radius-pill);
+}
+
+/* -- Fun: decorated frames, undecorated content -----------------------------
+   §7 / SPEC-fun §8: Fun may frame the reference, but it must not touch the
+   legibility of the technical content. Code and tables keep the mono face,
+   flat surfaces, square corners and no rotation — the same deliberate
+   exception the board already makes. */
+
+:root[data-ui='fun'] .reference-section,
+:root[data-ui='fun'] .reference-toc {
+  border: 3px solid var(--fun-outline);
+  border-radius: var(--fun-radius-md);
+  box-shadow: var(--fun-shadow-card);
+}
+
+:root[data-ui='fun'] .reference-toc a,
+:root[data-ui='fun'] .reference-copy {
+  border: 2px solid var(--fun-outline);
+  box-shadow: var(--fun-shadow-control);
+}
+
+:root[data-ui='fun'] .reference-toc a {
+  border-radius: var(--fun-radius-pill);
+}
+
+:root[data-ui='fun'] .reference-copy {
+  border-radius: var(--fun-radius-sm);
+}
+
+:root[data-ui='fun'] .reference-warning {
+  border: 3px solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: var(--fun-shadow-control);
+}
+
+:root[data-ui='fun'] .reference-code,
+:root[data-ui='fun'] .reference-scroll {
+  border: 2px solid var(--fun-outline);
+  border-radius: var(--fun-radius-sm);
+  box-shadow: var(--fun-shadow-control);
+  transform: none;
+}
+
+/* The content itself: no wobble, no display face, no hard shadow. */
+:root[data-ui='fun'] .developer-reference pre,
+:root[data-ui='fun'] .developer-reference pre code,
+:root[data-ui='fun'] .developer-reference code,
+:root[data-ui='fun'] .developer-reference table,
+:root[data-ui='fun'] .developer-reference th,
+:root[data-ui='fun'] .developer-reference td {
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-ui='fun'] .developer-reference pre,
+:root[data-ui='fun'] .developer-reference pre code,
+:root[data-ui='fun'] .developer-reference code {
+  font-family: var(--qch-font-mono);
+  letter-spacing: 0;
+}
+
+:root[data-ui='fun'] .reference-section p code,
+:root[data-ui='fun'] .reference-section td code,
+:root[data-ui='fun'] .reference-section th code,
+:root[data-ui='fun'] .reference-badges code {
+  border: 1px solid var(--fun-outline);
+  border-radius: 0;
+}
+
+:root[data-ui='fun'] .reference-code figcaption {
+  border-bottom: 2px solid var(--fun-outline);
+}
+
+:root[data-ui='fun'] .developer-reference :focus-visible {
+  outline: 3px solid var(--fun-focus);
+  outline-offset: 3px;
+}
+
+:root[data-ui='fun'] .developer-reference pre:focus-visible,
+:root[data-ui='fun'] .reference-scroll:focus-visible {
+  outline-offset: -3px;
+}
+
+/* -- reflow ------------------------------------------------------------------
+   At narrow widths and at the large text steps the reference tightens its
+   padding rather than letting content escape its container. The scroll
+   containers above are what actually guarantee no document-level overflow;
+   this only keeps the reading measure sane. */
+
+@media (max-width: 720px) {
+  .developer-reference {
+    gap: 20px;
+  }
+
+  .reference-section {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .reference-toc {
+    padding: 10px;
+  }
+
+  .reference-code figcaption {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .reference-section {
+    padding: 12px;
+  }
+
+  .developer-reference th,
+  .developer-reference td {
+    padding: 8px 10px;
+  }
+
+  .reference-code pre,
+  .reference-scroll > pre {
+    padding: 12px;
+  }
+
+  /* At 320px a row of pills eats the viewport; one link per line reads
+     better and keeps every target full width. */
+  .reference-toc {
+    flex-direction: column;
+  }
+
+  .reference-toc a {
+    justify-content: center;
+  }
+}
+
+/* §5.6 — the same tightening at the two largest text steps, where a single
+   line of code is already wider than the column. */
+:root[data-text-size='extra-large'] .reference-section,
+:root[data-text-size='huge'] .reference-section {
+  padding: 16px;
+}
+
+:root[data-text-size='huge'] .reference-code figcaption {
+  /* Label and button stop competing for a line they cannot share. */
+  align-items: stretch;
+  flex-direction: column;
+}
+
+:root[data-text-size='huge'] .reference-copy {
+  width: 100%;
+}
+
+:root[data-ui='fun'][data-text-size='extra-large'] .reference-section,
+:root[data-ui='fun'][data-text-size='extra-large'] .reference-toc,
+:root[data-ui='fun'][data-text-size='huge'] .reference-section,
+:root[data-ui='fun'][data-text-size='huge'] .reference-toc {
+  box-shadow: 3px 3px 0 var(--fun-ink);
+  transform: none;
+}
+
+@media (pointer: coarse) {
+  .reference-copy,
+  .reference-toc a {
+    min-height: 44px;
   }
 }

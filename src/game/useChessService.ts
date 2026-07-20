@@ -11,6 +11,13 @@ import { GameService, type TrackedGame } from './service';
 
 export const LOBBY_ROUTE: Route = { mode: 'group', groupId: CHESS_GROUP_ID };
 
+/** Home bridge actions this hook issues beyond the transport's own. */
+export const SELECTED_ACCOUNT_ACTION = 'GET_SELECTED_ACCOUNT';
+export const JOIN_GROUP_ACTION = 'JOIN_GROUP';
+
+/** Node API read used to decide whether the account may post to the group. */
+export const GROUP_MEMBERSHIP_PATH_PREFIX = '/groups/member/';
+
 export type ChessServiceState = {
   status: 'connecting' | 'ready' | 'spectator' | 'unavailable';
   address: string | null;
@@ -36,7 +43,7 @@ function webSocketUrlBase(): string | null {
 
 async function fetchSelectedAccount(): Promise<{ address: string; name: string | null } | null> {
   try {
-    const account = (await qdnRequest({ action: 'GET_SELECTED_ACCOUNT' })) as
+    const account = (await qdnRequest({ action: SELECTED_ACCOUNT_ACTION })) as
       | { address?: string; name?: string }
       | null;
     return account?.address ? { address: account.address, name: account.name ?? null } : null;
@@ -50,7 +57,7 @@ async function fetchIsGroupMember(address: string): Promise<boolean> {
     const result = (await qdnRequest({
       action: 'FETCH_NODE_API',
       method: 'GET',
-      path: `/groups/member/${encodeURIComponent(address)}`,
+      path: `${GROUP_MEMBERSHIP_PATH_PREFIX}${encodeURIComponent(address)}`,
     })) as { data?: unknown };
     const groups = Array.isArray(result?.data) ? result.data : [];
     return groups.some((group) => (group as { groupId?: number }).groupId === CHESS_GROUP_ID);
@@ -149,5 +156,5 @@ export function useChessService(): ChessServiceState & { refreshMembership: () =
 }
 
 export async function joinChessGroup(): Promise<void> {
-  await qdnRequest({ action: 'JOIN_GROUP', groupId: CHESS_GROUP_ID });
+  await qdnRequest({ action: JOIN_GROUP_ACTION, groupId: CHESS_GROUP_ID });
 }

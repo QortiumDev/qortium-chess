@@ -1,41 +1,20 @@
+// The supported-language list, the BCP-47 mapper and the RTL helper all live in
+// ./i18n — the module that owns the catalogs — and are re-exported here so the
+// display layer stays the single import site for host display settings.
+import { isRtlLanguage, normalizeLanguage as normalizeLanguageTag, SUPPORTED_LANGUAGES } from './i18n';
+import type { SupportedLanguage } from './i18n';
+
 export const TEXT_SIZE_VALUES = ['extra-small', 'small', 'medium', 'large', 'extra-large', 'huge'] as const;
 export const ACCENT_OPTIONS = ['green', 'blue', 'orange', 'purple', 'red', 'teal', 'cyan', 'pink', 'yellow'] as const;
 export const UI_STYLE_OPTIONS = ['classic', 'modern', 'fun'] as const;
 
-// Chess has no i18n catalogs yet, so the supported-language list and the RTL
-// helper live here instead of being imported from a shared i18n module. Keep
-// this list in sync with qortium-help/src/i18n.ts if Chess ever gains i18n.
-export const SUPPORTED_LANGUAGES = [
-  'ar',
-  'de',
-  'el',
-  'en',
-  'es',
-  'et',
-  'fi',
-  'fr',
-  'he',
-  'hi',
-  'hu',
-  'it',
-  'ja',
-  'ko',
-  'nb',
-  'nl',
-  'pl',
-  'pt',
-  'ro',
-  'ru',
-  'sv',
-  'zh-CN',
-  'zh-TW',
-] as const;
+export { isRtlLanguage, SUPPORTED_LANGUAGES };
+export type { SupportedLanguage };
 
 export type QdnTheme = 'dark' | 'light';
 export type QdnTextSize = (typeof TEXT_SIZE_VALUES)[number];
 export type QdnAccent = (typeof ACCENT_OPTIONS)[number];
 export type QdnUiStyle = (typeof UI_STYLE_OPTIONS)[number];
-export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export type QdnDisplaySettings = {
   accent: QdnAccent;
@@ -55,9 +34,6 @@ type QdnHostWindow = Window & {
   _qdnUIStyle?: unknown;
 };
 
-const SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
-const RTL_LANGUAGES = new Set<string>(['ar', 'he']);
-
 const DEFAULT_DISPLAY_SETTINGS: QdnDisplaySettings = {
   accent: 'green',
   language: 'en',
@@ -68,52 +44,6 @@ const DEFAULT_DISPLAY_SETTINGS: QdnDisplaySettings = {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object';
-}
-
-function normalizeRawLanguage(language: string) {
-  return language.trim().replace(/_/g, '-').toLowerCase();
-}
-
-function mapRawLanguage(language: string): SupportedLanguage | null {
-  const normalized = normalizeRawLanguage(language);
-
-  if (!normalized) {
-    return null;
-  }
-
-  const explicit: Partial<Record<string, SupportedLanguage>> = {
-    'en-gb': 'en',
-    'en-us': 'en',
-    'zh-cn': 'zh-CN',
-    'zh-hans': 'zh-CN',
-    'zh-hant': 'zh-TW',
-    'zh-tw': 'zh-TW',
-  };
-  const mapped = explicit[normalized];
-
-  if (mapped) {
-    return mapped;
-  }
-
-  const [primary, ...rest] = normalized.split('-');
-
-  if (primary && SUPPORTED_LANGUAGE_SET.has(primary)) {
-    return primary as SupportedLanguage;
-  }
-
-  if (primary === 'zh') {
-    if (rest.some((part) => part.includes('tw') || part.includes('hk') || part.includes('mo') || part.includes('hant'))) {
-      return 'zh-TW';
-    }
-
-    return 'zh-CN';
-  }
-
-  return null;
-}
-
-export function isRtlLanguage(language: SupportedLanguage) {
-  return RTL_LANGUAGES.has(language);
 }
 
 export function normalizeTheme(value: unknown): QdnTheme | null {
@@ -127,7 +57,7 @@ export function normalizeTheme(value: unknown): QdnTheme | null {
 }
 
 export function normalizeLanguage(value: unknown): SupportedLanguage | null {
-  return typeof value === 'string' ? mapRawLanguage(value) : null;
+  return normalizeLanguageTag(value);
 }
 
 export function normalizeTextSize(value: unknown): QdnTextSize | null {
