@@ -1,0 +1,8 @@
+{
+  "name": "qortium-chess-engine-audit",
+  "private": true,
+  "description": "Read-only audit harness for the J-Chess engine's classic-chess mode (see docs/ENGINE-AUDIT-2026-07-20.md)",
+  "dependencies": {
+    "chess.js": "^1.4.0"
+  }
+}
