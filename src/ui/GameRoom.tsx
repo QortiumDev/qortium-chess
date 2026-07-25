@@ -1,9 +1,11 @@
 // One game: board, join-request approvals, move list, actions, chat, event log.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getAvatarActions } from '../avatarClient';
 import type { GameService, TrackedGame } from '../game/service';
 import type { TranslateFunction } from '../i18n';
 import { Board, formatMovePairs } from './Board';
+import { AccountIdentity } from './AccountIdentity';
 import { describeGame, describeTerminalReason } from './Lobby';
 
 export type GameRoomProps = {
@@ -23,6 +25,20 @@ export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProp
   const [chatDraft, setChatDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [avatarActions, setAvatarActions] = useState<string[]>([]);
+
+  // Do not ask the browser-development fallback for avatar bytes. SHOW_ACTIONS
+  // is a capability gate; mounted identity rows fetch only after it advertises
+  // FETCH_ACCOUNT_AVATAR.
+  useEffect(() => {
+    let cancelled = false;
+    void getAvatarActions().then((actions) => {
+      if (!cancelled) setAvatarActions(actions);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const myColor = game.players
     ? game.players.white === me
@@ -83,6 +99,17 @@ export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProp
         <h2>{describeGame(game, me, t)}</h2>
       </div>
 
+      <div className="game-participants">
+        {game.players ? (
+          <>
+            <span className="game-participant"><strong>{t('color.white')}</strong><AccountIdentity address={game.players.white} actions={avatarActions} /></span>
+            <span className="game-participant"><strong>{t('color.black')}</strong><AccountIdentity address={game.players.black} actions={avatarActions} /></span>
+          </>
+        ) : (
+          <AccountIdentity address={game.creator} actions={avatarActions} />
+        )}
+      </div>
+
       {banner ? <p className="board-status">{banner}</p> : null}
       {error ? <div className="notice">{error}</div> : null}
 
@@ -100,7 +127,7 @@ export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProp
           <ul className="game-list">
             {game.joiners.map((joiner) => (
               <li key={joiner}>
-                {shortAddress(joiner)}{' '}
+                <AccountIdentity address={joiner} actions={avatarActions} />{' '}
                 <button type="button" disabled={busy} onClick={() => run(() => service!.approve(game.gameId, joiner))}>
                   {t('game.approve')}
                 </button>{' '}
@@ -168,7 +195,8 @@ export function GameRoom({ game, service, me, canPlay, t, onBack }: GameRoomProp
             <ul className="chat-list">
               {chatEvents.map((event) => (
                 <li key={event.signature}>
-                  <strong>{event.signer === me ? t('label.you') : shortAddress(event.signer)}:</strong>{' '}
+                  {event.signer === me ? <strong>{t('label.you')}</strong> : null}{' '}
+                  <AccountIdentity address={event.signer} actions={avatarActions} />:{' '}
                   {(event.message as { text: string }).text}
                 </li>
               ))}
