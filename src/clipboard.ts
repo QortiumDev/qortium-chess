@@ -5,10 +5,16 @@
 // back to an offscreen textarea plus `document.execCommand('copy')`, and reports
 // honest failure so the UI can tell the reader to select the code manually.
 //
+// The textarea fallback has to take focus to select its contents, so it
+// remembers the previously focused element (the copy control) and restores it
+// without scrolling once the textarea is gone.
+//
 // Dependencies are injected so both paths are testable without a DOM.
 
 export interface ClipboardDependencies {
-  document?: Pick<Document, 'body' | 'createElement' | 'execCommand'>;
+  document?: Pick<Document, 'body' | 'createElement' | 'execCommand'> & {
+    activeElement?: Element | null;
+  };
   navigator?: {
     clipboard?: {
       writeText?: (text: string) => Promise<void> | void;
@@ -42,6 +48,7 @@ function copyTextWithTextarea(
     return false;
   }
 
+  const previousFocus = documentRef.activeElement as HTMLElement | null | undefined;
   const textarea = documentRef.createElement('textarea');
   textarea.value = text;
   textarea.setAttribute('readonly', '');
@@ -61,5 +68,6 @@ function copyTextWithTextarea(
     return false;
   } finally {
     documentRef.body.removeChild(textarea);
+    previousFocus?.focus?.({ preventScroll: true });
   }
 }

@@ -6,7 +6,14 @@
 
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { REFERENCE_SNIPPETS, REFERENCE_SNIPPET_NAMES, Reference } from './Reference';
+import {
+  CHAT_RETENTION_DEFAULT_NOTE,
+  copyStatusText,
+  REFERENCE_SNIPPETS,
+  REFERENCE_SNIPPET_NAMES,
+  Reference,
+} from './Reference';
+import { REFERENCE_SECTIONS } from './ReferenceNavigation';
 import {
   GAME_ID_HEX_PATTERN,
   HASH_HEX_PATTERN,
@@ -169,6 +176,19 @@ describe('Reference — resource identity and discovery', () => {
     expect(html).toContain('Chat retention is finite');
     expect(html).toContain('no durability layer that outlives them');
   });
+
+  // The 24-hour figure is Core's retention default, not a QCH1 value: this app
+  // owns no constant for it, so the page must present it as a host default and
+  // never as a protocol guarantee.
+  it('presents the 24-hour figure as a Core default the app owns no constant for', () => {
+    const html = render();
+
+    expect(CHAT_RETENTION_DEFAULT_NOTE).toContain('24 hours');
+    expect(CHAT_RETENTION_DEFAULT_NOTE).toContain('defines no constant');
+    expect(html).toContain(escapeHtml(CHAT_RETENTION_DEFAULT_NOTE));
+    expect(html).toContain('a node setting, not a protocol value');
+    expect(html).toContain('unknown-but-finite');
+  });
 });
 
 describe('Reference — authority, lifecycle, and state', () => {
@@ -277,17 +297,43 @@ describe('Reference — limits and security', () => {
 });
 
 describe('Reference — accessibility and structure', () => {
-  it('exposes a labelled section navigation whose links match real anchors', () => {
+  it('exposes a labelled section navigation whose base-safe links match real anchors', () => {
     const html = render();
 
     expect(html).toContain('<nav aria-label="Developer reference sections"');
+    // Bare fragments resolve against Core's injected <base>; every link must be
+    // a full document URL with the section in the hash.
+    expect(html).not.toContain('href="#');
 
-    const anchors = [...html.matchAll(/href="#([a-z-]+)"/g)].map((match) => match[1]);
+    const anchors = [...html.matchAll(/href="\/\?view=developers#([a-z-]+)"/g)].map((match) => match[1]);
 
+    expect(anchors).toEqual(REFERENCE_SECTIONS.map(([id]) => id));
     expect(anchors.length).toBeGreaterThan(5);
     for (const anchor of anchors) {
       expect(html).toContain(`id="${anchor}"`);
     }
+  });
+
+  it('makes every section a programmatic focus target for section navigation', () => {
+    const html = render();
+
+    const sections = html.match(/<section [^>]*class="reference-section"[^>]*>/g) ?? [];
+
+    expect(sections.length).toBe(REFERENCE_SECTIONS.length);
+    for (const section of sections) {
+      expect(section).toContain('tabindex="-1"');
+    }
+  });
+
+  it('pins the reference root to English left-to-right regardless of the shell locale', () => {
+    const html = render();
+
+    expect(html).toMatch(/<article [^>]*class="developer-reference"[^>]*>/);
+    const root = html.match(/<article [^>]*class="developer-reference"[^>]*>/)?.[0] ?? '';
+
+    expect(root).toContain('lang="en"');
+    expect(root).toContain('dir="ltr"');
+    expect(html).toContain('Always-English public contract');
   });
 
   it('labels every section heading and every table', () => {
@@ -307,14 +353,29 @@ describe('Reference — accessibility and structure', () => {
     expect(captions).toBe(tables);
   });
 
-  it('gives every copy control an aria-live result region and a keyboard-reachable pre', () => {
+  it('gives every copy control a visible status region and a keyboard-reachable pre', () => {
     const html = render();
 
     const copyButtons = html.match(/class="reference-copy"/g)?.length ?? 0;
 
     expect(copyButtons).toBe(REFERENCE_SNIPPET_NAMES.length);
     expect(html.match(/aria-live="polite"/g)?.length).toBe(REFERENCE_SNIPPET_NAMES.length);
+    expect(html.match(/role="status"/g)?.length).toBe(REFERENCE_SNIPPET_NAMES.length);
+    // The status is a visible paragraph, never a screen-reader-only span.
+    expect(html.match(/class="reference-copy-status"/g)?.length).toBe(REFERENCE_SNIPPET_NAMES.length);
+    expect(html).not.toContain('class="sr-only"');
+    expect(html.match(new RegExp(escapeHtml(copyStatusText('idle', '')), 'g'))?.length).toBe(
+      REFERENCE_SNIPPET_NAMES.length,
+    );
     expect(html).toContain('<pre tabindex="0">');
+  });
+
+  it('names every copy outcome in a distinct visible sentence', () => {
+    expect(copyStatusText('copied', 'Canonical routes')).toBe('Copied Canonical routes.');
+    expect(copyStatusText('unavailable', 'Canonical routes')).toBe(
+      'Clipboard unavailable. Select the code and copy it manually.',
+    );
+    expect(copyStatusText('idle', 'Canonical routes')).toBe('Code can be selected for manual copying.');
   });
 
   it('wraps every table and code block in its own scroll container', () => {

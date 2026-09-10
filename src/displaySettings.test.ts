@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  ACCENT_OPTIONS,
   applyDisplaySettings,
   getDisplaySettingsUpdateFromMessage,
   getInitialDisplaySettings,
@@ -19,6 +22,60 @@ const current: QdnDisplaySettings = {
   theme: 'light',
   uiStyle: 'classic',
 };
+
+describe('accent contract', () => {
+  const css = readFileSync(fileURLToPath(new URL('./styles.css', import.meta.url)), 'utf8');
+
+  it("accepts Home's clay accent on every entry point", () => {
+    expect(ACCENT_OPTIONS).toContain('clay');
+    expect(normalizeAccent('clay')).toBe('clay');
+    expect(normalizeAccent(' Clay ')).toBe('clay');
+    expect(getDisplaySettingsUpdateFromMessage({ action: 'ACCENT_CHANGED', accent: 'clay' }, current)).toEqual({
+      ...current,
+      accent: 'clay',
+    });
+    expect(
+      getDisplaySettingsUpdateFromMessage({ action: 'DISPLAY_SETTINGS_CHANGED', accent: 'clay', theme: 'dark' }, current),
+    ).toEqual({ ...current, accent: 'clay', theme: 'dark' });
+
+    vi.stubGlobal('window', { location: { search: '?accent=clay' } });
+    expect(getInitialDisplaySettings().accent).toBe('clay');
+    vi.unstubAllGlobals();
+
+    vi.stubGlobal('window', { _qdnAccent: 'clay', location: { search: '' } });
+    expect(getInitialDisplaySettings().accent).toBe('clay');
+    vi.unstubAllGlobals();
+  });
+
+  // Every accent the module accepts must have a light AND a dark token block,
+  // otherwise a host-selected accent silently renders with the previous one's
+  // colours. The stylesheet header count is kept honest at the same time.
+  it('ships light and dark token blocks for every accent the module accepts', () => {
+    for (const accent of ACCENT_OPTIONS) {
+      const light = `:root[data-accent='${accent}'] {`;
+      const dark = `:root[data-theme='dark'][data-accent='${accent}'] {`;
+
+      expect(css, `light tokens for ${accent}`).toContain(light);
+      expect(css, `dark tokens for ${accent}`).toContain(dark);
+      for (const block of [light, dark]) {
+        const body = css.slice(css.indexOf(block), css.indexOf('}', css.indexOf(block)));
+
+        expect(body, `${block} sets --qch-accent`).toContain('--qch-accent:');
+        expect(body, `${block} sets --qch-accent-hover`).toContain('--qch-accent-hover:');
+        expect(body, `${block} sets --qch-accent-soft`).toContain('--qch-accent-soft:');
+        expect(body, `${block} sets --qch-accent-ring`).toContain('--qch-accent-ring:');
+      }
+    }
+
+    const lightBlocks = css.match(/^:root\[data-accent='[a-z]+'\] \{/gm) ?? [];
+    const darkBlocks = css.match(/^:root\[data-theme='dark'\]\[data-accent='[a-z]+'\] \{/gm) ?? [];
+
+    expect(lightBlocks.length).toBe(ACCENT_OPTIONS.length);
+    expect(darkBlocks.length).toBe(ACCENT_OPTIONS.length);
+    expect(css).toContain(`${ACCENT_OPTIONS.length} accents, light + dark`);
+    expect(css).toContain(`accents (${ACCENT_OPTIONS.length} x light, ${ACCENT_OPTIONS.length} x dark)`);
+  });
+});
 
 describe('getDisplaySettingsUpdateFromMessage', () => {
   afterEach(() => {

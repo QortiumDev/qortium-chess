@@ -131,6 +131,8 @@ describe('fouc-1 boot script matches displaySettings.ts', () => {
     '?theme=bogus',
     '?accent=blue',
     '?accent=yellow&theme=dark',
+    '?accent=clay',
+    '?accent=CLAY&theme=dark',
     '?accent=chartreuse',
     '?textSize=huge',
     '?textSize=extra-small',

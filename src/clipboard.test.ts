@@ -101,6 +101,45 @@ describe('copyTextToClipboard', () => {
     expect(fallbackDocument.body.removeChild).toHaveBeenCalledTimes(1);
   });
 
+  it('restores the previously focused element without scrolling after the fallback', async () => {
+    const previousFocus = { focus: vi.fn() };
+    const fallbackDocument = { ...mockDocument(true), activeElement: previousFocus };
+
+    expect(
+      await copyTextToClipboard(
+        'Focus',
+        deps({ document: fallbackDocument as never, navigator: { clipboard: {} } }),
+      ),
+    ).toBe(true);
+    expect(fallbackDocument.textarea.focus).toHaveBeenCalledTimes(1);
+    expect(previousFocus.focus).toHaveBeenCalledTimes(1);
+    expect(previousFocus.focus).toHaveBeenCalledWith({ preventScroll: true });
+    // Restore happens after the textarea is gone, never while it still holds focus.
+    expect(previousFocus.focus.mock.invocationCallOrder[0]).toBeGreaterThan(
+      fallbackDocument.body.removeChild.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('restores focus even when execCommand refuses or throws', async () => {
+    for (const result of [false, () => { throw new Error('denied'); }] as const) {
+      const previousFocus = { focus: vi.fn() };
+      const fallbackDocument = { ...mockDocument(result), activeElement: previousFocus };
+
+      expect(
+        await copyTextToClipboard('Denied', deps({ document: fallbackDocument as never, navigator: {} })),
+      ).toBe(false);
+      expect(previousFocus.focus).toHaveBeenCalledWith({ preventScroll: true });
+    }
+  });
+
+  it('tolerates a document with no focused element or a non-focusable one', async () => {
+    const noActive = { ...mockDocument(true), activeElement: null };
+    const notFocusable = { ...mockDocument(true), activeElement: {} };
+
+    expect(await copyTextToClipboard('A', deps({ document: noActive as never, navigator: {} }))).toBe(true);
+    expect(await copyTextToClipboard('B', deps({ document: notFocusable as never, navigator: {} }))).toBe(true);
+  });
+
   it('reports failure when there is no clipboard and no document at all', async () => {
     expect(await copyTextToClipboard('Nothing', deps({}))).toBe(false);
   });
