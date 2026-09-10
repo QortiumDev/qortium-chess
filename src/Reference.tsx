@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { copyTextToClipboard } from './clipboard';
+import { ReferenceNavigation } from './ReferenceNavigation';
 import {
   GAME_ID_HEX_PATTERN,
   HASH_HEX_PATTERN,
@@ -67,6 +68,14 @@ const EXAMPLE_GAME_ID = '047f069c5a4e6ad5f4617ef063374cee';
 const EXAMPLE_NONCE = 'b1c2d3e4f5061728394a5b6c7d8e9f00';
 const EXAMPLE_PREV_HASH = '3f1a9d0c1e2b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80918a2b3c4d';
 const EXAMPLE_STATE_HASH = '9c8b7a695847362514f3e2d1c0b9a8978685746352413f2e1d0c9b8a79685746';
+
+/**
+ * Core's chat retention default, stated as a host-owned value. This app has no
+ * implementation constant for it (Core owns the setting and users may change
+ * it), so the reference names it as a default rather than a contract.
+ */
+export const CHAT_RETENTION_DEFAULT_NOTE =
+  'Core keeps messages for 24 hours by default and this app defines no constant for it';
 
 /**
  * Copyable examples for the operations an independent client needs (§5).
@@ -238,17 +247,35 @@ export const REFERENCE_SNIPPET_NAMES = Object.keys(
   REFERENCE_SNIPPETS,
 ) as ReferenceSnippetName[];
 
+export type CopyState = 'copied' | 'idle' | 'unavailable';
+
+/** Visible result of a copy control; one string per state, announced politely. */
+export function copyStatusText(state: CopyState, label: string): string {
+  switch (state) {
+    case 'copied':
+      return `Copied ${label}.`;
+    case 'unavailable':
+      return 'Clipboard unavailable. Select the code and copy it manually.';
+    default:
+      return 'Code can be selected for manual copying.';
+  }
+}
+
 /**
  * Three-state copy control. A boolean would silently no-op in exactly the
  * case that matters — a sandboxed QDN iframe where the clipboard is blocked —
- * so unavailability is a first-class outcome announced through aria-live.
+ * so unavailability is a first-class outcome shown to every reader in a
+ * visible status line (not only to screen readers), and focus stays on the
+ * control after the clipboard fallback has run.
  */
 export function CopyableCode({ id, label }: { id: ReferenceSnippetName; label: string }) {
-  const [state, setState] = useState<'copied' | 'idle' | 'unavailable'>('idle');
+  const [state, setState] = useState<CopyState>('idle');
   const code = REFERENCE_SNIPPETS[id];
 
-  async function copy() {
+  async function copy(button: HTMLButtonElement) {
+    setState('idle');
     setState((await copyTextToClipboard(code)) ? 'copied' : 'unavailable');
+    button.focus({ preventScroll: true });
   }
 
   return (
@@ -258,22 +285,18 @@ export function CopyableCode({ id, label }: { id: ReferenceSnippetName; label: s
         <button
           aria-label={`${state === 'copied' ? 'Copied' : 'Copy'} ${label}`}
           className="reference-copy"
-          onClick={() => void copy()}
+          onClick={(event) => void copy(event.currentTarget)}
           type="button"
         >
           {state === 'copied' ? 'Copied' : 'Copy'}
         </button>
       </figcaption>
+      <p aria-live="polite" className="reference-copy-status" role="status">
+        {copyStatusText(state, label)}
+      </p>
       <pre tabIndex={0}>
         <code>{code}</code>
       </pre>
-      <span aria-live="polite" className="sr-only">
-        {state === 'copied'
-          ? `${label} copied.`
-          : state === 'unavailable'
-            ? 'Clipboard access is unavailable. Select the code manually.'
-            : ''}
-      </span>
     </figure>
   );
 }
@@ -334,28 +357,21 @@ function Section({
   id: string;
   title: string;
 }) {
+  // tabIndex -1: section navigation moves focus here programmatically after
+  // scrolling, without adding the section to the Tab order.
   return (
-    <section aria-labelledby={`${id}-heading`} className="reference-section" id={id}>
+    <section aria-labelledby={`${id}-heading`} className="reference-section" id={id} tabIndex={-1}>
       <h2 id={`${id}-heading`}>{title}</h2>
       {children}
     </section>
   );
 }
 
-const TOC = [
-  { id: 'reference-contract', label: 'Contract and envelope' },
-  { id: 'reference-messages', label: 'Message types' },
-  { id: 'reference-hash', label: 'Hash chain and move encoding' },
-  { id: 'reference-validation', label: 'Validation and compatibility' },
-  { id: 'reference-transport', label: 'Transport and discovery' },
-  { id: 'reference-lifecycle', label: 'Authority, lifecycle, and state' },
-  { id: 'reference-bridge', label: 'Home bridge and runtime modes' },
-  { id: 'reference-limits', label: 'Limits and security' },
-];
-
 export function Reference() {
+  // lang/dir are pinned on the root: this page intentionally stays English and
+  // left-to-right even when the shell renders an RTL locale (ar, he).
   return (
-    <article className="developer-reference">
+    <article className="developer-reference" dir="ltr" lang="en">
       <header className="reference-hero">
         <p className="eyebrow">Always-English public contract</p>
         <h1>
@@ -369,13 +385,7 @@ export function Reference() {
         </p>
       </header>
 
-      <nav aria-label="Developer reference sections" className="reference-toc">
-        {TOC.map((entry) => (
-          <a href={`#${entry.id}`} key={entry.id}>
-            {entry.label}
-          </a>
-        ))}
-      </nav>
+      <ReferenceNavigation />
 
       <Section id="reference-contract" title="Contract and envelope">
         <p>
@@ -584,10 +594,14 @@ export function Reference() {
           the expiry countdown only — they never decide validity, which comes entirely from the
           hash chain and the ply sequence.
         </p>
+        {/* The 24-hour figure is Core's retention default, a node setting this
+            app neither defines nor reads, so there is no app constant to bind
+            it to — it is documented as a host default, not a protocol value. */}
         <p className="reference-warning">
-          <strong>Chat retention is finite.</strong> Chat retention is user-configurable; 24 hours
-          is only the default, so treat the horizon as unknown-but-finite rather than as a fixed
-          24-hour clock. Once a game&apos;s messages age out of the group it disappears from live
+          <strong>Chat retention is finite.</strong> Chat retention is a node setting, not a
+          protocol value: {CHAT_RETENTION_DEFAULT_NOTE}, so treat the horizon as
+          unknown-but-finite rather than as a fixed 24-hour clock. Once a game&apos;s messages
+          age out of the group it disappears from live
           view, and this build offers no durability layer that outlives them: there is no publish
           path, no fetch path, and no persistence contract for a finished game. Treat every game as
           readable only for as long as its chat messages survive.

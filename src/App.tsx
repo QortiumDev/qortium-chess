@@ -57,19 +57,24 @@ export function App() {
     navigateChessRoute(routeFromView(viewFromRoute(parseChessRoute())), 'canonicalize');
   }, []);
 
+  // Functional update: several synchronous host messages (THEME_CHANGED then
+  // ACCENT_CHANGED in one batch) must each compose on the previous result, not
+  // on a `display` captured by a stale closure. The listener is therefore
+  // installed once and never reads render-scope state.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      const next = getDisplaySettingsUpdateFromMessage(event.data, display);
-
-      if (next) {
-        setDisplay(next);
-        applyDisplaySettings(next);
-      }
+      setDisplay((current) => getDisplaySettingsUpdateFromMessage(event.data, current) ?? current);
     };
 
     window.addEventListener('message', onMessage);
 
     return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  // Stamp <html> from the committed state, so what the stylesheet sees is
+  // always the settings React rendered with — never an intermediate value.
+  useEffect(() => {
+    applyDisplaySettings(display);
   }, [display]);
 
   // Derived from the `language` display setting, so the LANGUAGE_CHANGED /
@@ -104,6 +109,7 @@ export function App() {
             <nav className="view-tabs">
               <button
                 type="button"
+                aria-current={view.kind === 'lobby' || view.kind === 'game' ? 'page' : undefined}
                 className={view.kind === 'lobby' || view.kind === 'game' ? 'active' : ''}
                 onClick={() => goTo({ kind: 'lobby' })}
               >
@@ -111,6 +117,7 @@ export function App() {
               </button>
               <button
                 type="button"
+                aria-current={view.kind === 'local' ? 'page' : undefined}
                 className={view.kind === 'local' ? 'active' : ''}
                 onClick={() => goTo({ kind: 'local' })}
               >
@@ -118,6 +125,7 @@ export function App() {
               </button>
               <button
                 type="button"
+                aria-current={view.kind === 'developers' ? 'page' : undefined}
                 className={view.kind === 'developers' ? 'active' : ''}
                 onClick={() => goTo({ kind: 'developers' })}
               >
